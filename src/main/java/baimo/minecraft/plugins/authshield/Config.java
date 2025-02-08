@@ -1,41 +1,50 @@
 package baimo.minecraft.plugins.authshield;
 
-import java.util.List;
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.io.InputStream;
-import java.io.Reader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.network.chat.Component;
+import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import java.util.Map;
-import java.util.HashMap;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import com.google.gson.reflect.TypeToken;
-import java.io.FileWriter;
 
 @EventBusSubscriber(modid = AuthShield.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class Config {
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Pattern SPECIAL_CHARS = Pattern.compile("[!@#$%^&*(),.?\":{}|<>]");
+    private static final Pattern NUMBERS = Pattern.compile("\\d");
+    private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
+    private static final Gson gson = new Gson();
+    private static final Logger LOGGER = LogManager.getLogger("authshield");
     private static JsonObject config;
     private static Map<String, String> translations = new HashMap<>();
-    private static String currentLanguage = "en_us"; // Ä¬ÈÏÓ¢ÎÄ
+    private static String currentLanguage = "en_us"; // Ä¬ï¿½ï¿½Ó¢ï¿½ï¿½
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
@@ -69,9 +78,6 @@ public class Config {
 
     // Message settings
     public static boolean titleEnabled;
-    public static int titleFadeIn;
-    public static int titleStay;
-    public static int titleFadeOut;
     public static boolean subtitleEnabled;
     public static boolean actionbarEnabled;
     public static int actionbarInterval;
@@ -108,11 +114,9 @@ public class Config {
 
     public static void loadConfig() {
         try {
-            // È·±£ÅäÖÃÄ¿Â¼´æÔÚ
             Path configDir = Path.of("config/authshield");
             Files.createDirectories(configDir);
 
-            // ¸´ÖÆÄ¬ÈÏÅäÖÃÎÄ¼ş
             Path configPath = configDir.resolve("config.json");
             if (Files.notExists(configPath)) {
                 try (InputStream in = Config.class.getResourceAsStream("/config/authshield/config.json")) {
@@ -126,8 +130,8 @@ public class Config {
                 }
             }
 
-            // ¶ÁÈ¡ÅäÖÃÎÄ¼ş
-            try (Reader reader = Files.newBufferedReader(configPath)) {
+            // ä½¿ç”¨UTF-8ç¼–ç è¯»å–é…ç½®æ–‡ä»¶
+            try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
                 config = new Gson().fromJson(reader, JsonObject.class);
                 LOGGER.info(getLogMessage("config.loaded"), configPath);
             }
@@ -177,9 +181,6 @@ public class Config {
             JsonObject messages = config.getAsJsonObject("messages");
             JsonObject title = messages.getAsJsonObject("title");
             titleEnabled = title.get("enabled").getAsBoolean();
-            titleFadeIn = title.get("fade_in").getAsInt();
-            titleStay = title.get("stay").getAsInt();
-            titleFadeOut = title.get("fade_out").getAsInt();
 
             JsonObject subtitle = messages.getAsJsonObject("subtitle");
             subtitleEnabled = subtitle.get("enabled").getAsBoolean();
@@ -188,43 +189,35 @@ public class Config {
             actionbarEnabled = actionbar.get("enabled").getAsBoolean();
             actionbarInterval = actionbar.get("interval").getAsInt();
             
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to load config", e);
         }
     }
     
     public static void loadTranslations() {
         try {
-            // ¸´ÖÆÄ¬ÈÏÓïÑÔÎÄ¼ş
             Path langDir = Path.of("config/authshield/lang");
             Files.createDirectories(langDir);
 
-            // ¸´ÖÆÓ¢ÎÄÓïÑÔÎÄ¼ş
+            // å¤åˆ¶é»˜è®¤è¯­è¨€æ–‡ä»¶
             copyLanguageFile(langDir, "en_us.json");
-            // ¸´ÖÆÖĞÎÄÓïÑÔÎÄ¼ş
             copyLanguageFile(langDir, "zh_cn.json");
 
-            // »ñÈ¡ÏµÍ³ÓïÑÔ
-            String lang = java.util.Locale.getDefault().toString().toLowerCase();
-            if (lang.contains("zh")) {
-                currentLanguage = "zh_cn";
-            } else {
-                currentLanguage = "en_us";
-            }
+            // æ ¹æ®é…ç½®åŠ è½½å¯¹åº”è¯­è¨€æ–‡ä»¶
+            String lang = config.getAsJsonObject("settings").get("language").getAsString();
+            Path langFile = langDir.resolve(lang + ".json");
 
-            // ¼ÓÔØÓïÑÔÎÄ¼ş
-            Path langFile = langDir.resolve(currentLanguage + ".json");
             if (Files.exists(langFile)) {
                 try (Reader reader = Files.newBufferedReader(langFile, StandardCharsets.UTF_8)) {
                     translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
-                    LOGGER.info("ÒÑ¼ÓÔØÓïÑÔÎÄ¼ş: {}", langFile);
+                    currentLanguage = lang;
+                    LOGGER.info(getLogMessage("lang.loaded"), lang);
                 }
             } else {
-                LOGGER.warn("ÕÒ²»µ½ÓïÑÔÎÄ¼ş: {}, ½«Ê¹ÓÃÓ¢ÎÄ(en_us)", currentLanguage);
                 loadDefaultLanguage();
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to load language file", e);
+            LOGGER.error("Failed to load translations", e);
             loadDefaultLanguage();
         }
     }
@@ -236,7 +229,7 @@ public class Config {
                 try (InputStream in = Config.class.getResourceAsStream("/assets/authshield/lang/" + fileName)) {
                     if (in != null) {
                         Files.copy(in, langFile);
-                        LOGGER.info("Created language file: {}", langFile);
+                        LOGGER.info(getLogMessage("lang.created"), langFile);
                     }
                 }
             }
@@ -365,15 +358,18 @@ public class Config {
     public static double getFirstSpawnZ() { return firstSpawnZ; }
     public static String getFirstSpawnWorld() { return firstSpawnWorld; }
 
-    // Ìí¼Ó»ñÈ¡ÈÕÖ¾ÏûÏ¢µÄ·½·¨
+    // ï¿½ï¿½ï¿½Ó»ï¿½È¡ï¿½ï¿½Ö¾ï¿½ï¿½Ï¢ï¿½Ä·ï¿½ï¿½ï¿½
     public static String getLogMessage(String key) {
         if (currentLanguage.equals("zh_cn")) {
             switch (key) {
-                case "config.created": return "ÒÑ´´½¨Ä¬ÈÏÅäÖÃÎÄ¼ş: {}";
-                case "config.not_found": return "ÔÚ×ÊÔ´ÎÄ¼şÖĞÕÒ²»µ½Ä¬ÈÏÅäÖÃÎÄ¼ş config.json";
-                case "config.loaded": return "ÒÑ´Ó {} ¼ÓÔØÅäÖÃ";
-                case "password.loaded": return "AuthShield ÃÜÂëÊı¾İÒÑ¼ÓÔØ";
-                case "password.load_failed": return "¼ÓÔØÃÜÂëÊı¾İÊ§°Ü";
+                case "config.created": return "å·²åˆ›å»ºé»˜è®¤é…ç½®æ–‡ä»¶: {}";
+                case "config.not_found": return "åœ¨èµ„æºæ–‡ä»¶ä¸­æ‰¾ä¸åˆ°é»˜è®¤é…ç½®æ–‡ä»¶ config.json";
+                case "config.loaded": return "å·²ä» {} åŠ è½½é…ç½®";
+                case "mod.initialized": return "AuthShield å®‰å…¨ç³»ç»Ÿå·²åŠ è½½";
+                case "password.loaded": return "AuthShield å¯†ç æ•°æ®å·²åŠ è½½";
+                case "password.load_failed": return "å¯†ç æ•°æ®åŠ è½½å¤±è´¥";
+                case "lang.created": return "å·²åˆ›å»ºè¯­è¨€æ–‡ä»¶: {}";
+                case "lang.loaded": return "å·²åŠ è½½è¯­è¨€æ–‡ä»¶: {}";
                 default: return key;
             }
         } else {
@@ -381,8 +377,11 @@ public class Config {
                 case "config.created": return "Created default config file: {}";
                 case "config.not_found": return "Default config.json not found in resources";
                 case "config.loaded": return "Loaded config from {}";
+                case "mod.initialized": return "AuthShield security system loaded";
                 case "password.loaded": return "AuthShield password data loaded";
                 case "password.load_failed": return "Failed to load password data";
+                case "lang.created": return "Created language file: {}";
+                case "lang.loaded": return "Loaded language file: {}";
                 default: return key;
             }
         }
@@ -390,5 +389,22 @@ public class Config {
 
     public static String getCurrentLanguage() {
         return currentLanguage;
+    }
+
+    // æ·»åŠ é‡è½½åŠŸèƒ½
+    public static boolean reload() {
+        try {
+            loadConfig();
+            loadTranslations();
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Failed to reload configuration", e);
+            return false;
+        }
+    }
+
+    // æ·»åŠ è·å–ç™»å½•è¶…æ—¶æ—¶é—´çš„æ–¹æ³•
+    public static int getLoginTimeoutSeconds() {
+        return loginTimeoutSeconds;
     }
 }

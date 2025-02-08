@@ -1,6 +1,6 @@
 {
   "settings": {
-    "language": "zh_cn",
+    "language": "en_us",
     "debug": false
   },
   "login": {
@@ -43,9 +43,6 @@
   "messages": {
     "title": {
       "enabled": true,
-      "fade_in": 10,
-      "stay": 70,
-      "fade_out": 20,
       "text": "authshield.title"
     },
     "subtitle": {

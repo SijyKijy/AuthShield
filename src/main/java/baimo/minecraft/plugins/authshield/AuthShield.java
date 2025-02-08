@@ -5,7 +5,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,27 +13,35 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
-import java.util.UUID;
 
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.logging.LogUtils;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -44,6 +51,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -62,14 +70,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import com.mojang.authlib.GameProfile;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraft.ChatFormatting;
 
 @Mod(
         value = "authshield",
@@ -78,13 +78,12 @@ import net.minecraft.ChatFormatting;
 public class AuthShield {
     private final Timer timer = new Timer(true);
     private static final ConcurrentMap<String, TimerTask> loginTasks = new ConcurrentHashMap();
-    private static final long LOGIN_TIMEOUT_MILLIS = 60000L;
     private static final String PASSWORD_FILE = "passwords.json";
     private static final Map<String, String> passwords = new HashMap();
     private static final Set<String> loggedInPlayers = Sets.newConcurrentHashSet();
     private static final Gson gson = new Gson();
     public static final String MODID = "authshield";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Logger LOGGER = LogManager.getLogger("authshield");
 
     public AuthShield(IEventBus modEventBus, ModContainer modContainer) {
         try {
@@ -101,15 +100,15 @@ public class AuthShield {
             LOGGER.info(ChatFormatting.GRAY + "[ " + 
                        ChatFormatting.LIGHT_PURPLE + "AuthShield" + 
                        ChatFormatting.GRAY + " ]");
-                   
+                       
             if (Config.getCurrentLanguage().equals("zh_cn")) {
-                LOGGER.info(ChatFormatting.WHITE + "¸ĞĞ»Ê¹ÓÃ " + 
-                           ChatFormatting.LIGHT_PURPLE + "Ç§Çü" +
-                           ChatFormatting.WHITE + " µÄµÇÂ¼ÑéÖ¤²å¼ş");
-                LOGGER.info(ChatFormatting.WHITE + "»¶Ó­¼ÓÈë¿ª·¢ÉçÇø " +
-                           ChatFormatting.AQUA + "QQÈº: " + 
+                LOGGER.info(ChatFormatting.WHITE + "æ„Ÿè°¢ä½¿ç”¨ " + 
+                           ChatFormatting.LIGHT_PURPLE + "åƒå±ˆ" +
+                           ChatFormatting.WHITE + " çš„ç™»å½•éªŒè¯æ’ä»¶");
+                LOGGER.info(ChatFormatting.WHITE + "æ¬¢è¿åŠ å…¥å¼€å‘è€…ç¾¤ " +
+                           ChatFormatting.AQUA + "QQç¾¤: " + 
                            ChatFormatting.YELLOW + "528651839");
-                LOGGER.info(ChatFormatting.WHITE + "»ñÈ¡¸ü¶à×ÊÑ¶Óë¼¼ÊõÖ§³Ö");
+                LOGGER.info(ChatFormatting.WHITE + "è·å–æ›´å¤šèµ„è®¯ä¸æŠ€æœ¯æ”¯æŒ");
             }
             
             LOGGER.info("");
@@ -285,8 +284,8 @@ public class AuthShield {
     }
 
     @SubscribeEvent
-    public void registerCommands(RegisterCommandsEvent ev) {
-        CommandDispatcher<CommandSourceStack> dispatcher = ev.getDispatcher();
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
         // æ³¨å†Œå‘½ä»¤
         LiteralArgumentBuilder<CommandSourceStack> register = Commands.literal("register")
@@ -298,7 +297,7 @@ public class AuthShield {
                 .then(Commands.argument("confirmPassword", StringArgumentType.word())
                     .executes(AuthShield::signUp)));
 
-        // æ³¨å†Œç®?åŒ–å‘½ä» /reg
+        // æ³¨å†Œç®€åŒ–å‘½ä»¤ /reg
         LiteralArgumentBuilder<CommandSourceStack> registerAlias = Commands.literal("reg")
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
@@ -335,43 +334,52 @@ public class AuthShield {
 
         // æ·»åŠ å¸®åŠ©å‘½ä»¤
         LiteralArgumentBuilder<CommandSourceStack> help = Commands.literal("authshield")
-            .then(Commands.literal("help")
-                .executes(context -> {
-                    CommandSourceStack source = context.getSource();
-                    boolean isOp = source.hasPermission(2);
-                    
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.header"), false);
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.register"), false);
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.login"), false);
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.changepassword"), false);
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.cp"), false);
-                    
-                    if (isOp) {
-                        source.sendSuccess(() -> Config.getMessage("authshield.help.admin.unregister"), false);
-                        source.sendSuccess(() -> Config.getMessage("authshield.help.admin.setfirstspawn"), false);
-                    }
-                    
-                    source.sendSuccess(() -> Config.getMessage("authshield.help.footer"), false);
-                    return 1;
-                }));
+            .executes(context -> {
+                CommandSourceStack source = context.getSource();
+                boolean isOp = source.hasPermission(2);
+                
+                source.sendSuccess(() -> Config.getMessage("authshield.help.header"), false);
+                source.sendSuccess(() -> Config.getMessage("authshield.help.register"), false);
+                source.sendSuccess(() -> Config.getMessage("authshield.help.login"), false);
+                source.sendSuccess(() -> Config.getMessage("authshield.help.changepassword"), false);
+                
+                if (isOp) {
+                    source.sendSuccess(() -> Config.getMessage("authshield.help.admin.unregister"), false);
+                    source.sendSuccess(() -> Config.getMessage("authshield.help.admin.setfirstspawn"), false);
+                }
+                
+                source.sendSuccess(() -> Config.getMessage("authshield.help.footer"), false);
+                return 1;
+            });
 
-        // æ·»åŠ æ³¨é”€å‘½ä»¤
-        LiteralArgumentBuilder<CommandSourceStack> unregister = Commands.literal("authshield")
+        // æ·»åŠ ç®¡ç†å‘˜å‘½ä»¤
+        help.then(Commands.literal("unregister")
             .requires(source -> source.hasPermission(2))
-            .then(Commands.literal("unregister")
-                .then(Commands.argument("player", StringArgumentType.word())
-                    .executes(AuthShield::unregisterPlayer)));
+            .then(Commands.argument("player", StringArgumentType.word())
+                .requires(source -> source.hasPermission(2))
+                .executes(AuthShield::unregisterPlayer)));
+
+        help.then(Commands.literal("setfirstspawn")
+            .requires(source -> source.hasPermission(2))
+            .executes(AuthShield::setFirstSpawn));
+
+        help.then(Commands.literal("reload")
+            .requires(source -> source.hasPermission(2))
+            .executes(context -> {
+                if (Config.reload()) {
+                    context.getSource().sendSuccess(() -> 
+                        Config.getMessage("authshield.reload.success"), true);
+                } else {
+                    context.getSource().sendFailure(
+                        Config.getMessage("authshield.reload.failed"));
+                }
+                return 1;
+            }));
 
         LiteralArgumentBuilder<CommandSourceStack> changePasswordAlias = Commands.literal("cp")
             .then(Commands.argument("oldPassword", StringArgumentType.word())
                 .then(Commands.argument("newPassword", StringArgumentType.word())
                     .executes(AuthShield::changePassword)));
-
-        // Add first spawn command
-        LiteralArgumentBuilder<CommandSourceStack> setFirstSpawn = Commands.literal("authshield")
-            .requires(source -> source.hasPermission(2))  // Requires OP permission
-            .then(Commands.literal("setfirstspawn")
-                .executes(AuthShield::setFirstSpawn));
 
         dispatcher.register(register);
         dispatcher.register(registerAlias);
@@ -380,8 +388,6 @@ public class AuthShield {
         dispatcher.register(changePassword);
         dispatcher.register(changePasswordAlias);
         dispatcher.register(help);
-        dispatcher.register(unregister);
-        dispatcher.register(setFirstSpawn);
     }
 
     public static void promptLogin(Player player) {
@@ -396,21 +402,6 @@ public class AuthShield {
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.hasPermissions(2) && Config.getCurrentLanguage().equals("zh_cn")) { // Check if player is OP and language is Chinese
-                player.sendSystemMessage(Component.empty());
-                player.sendSystemMessage(Component.literal("[ ").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD)
-                    .append(Component.literal("AuthShield").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
-                    .append(Component.literal(" ]").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD)));
-                player.sendSystemMessage(Component.literal("¸ĞĞ»Ê¹ÓÃ ").withStyle(ChatFormatting.WHITE)
-                    .append(Component.literal("°×Ä°").withStyle(ChatFormatting.LIGHT_PURPLE))
-                    .append(Component.literal(" ¿ª·¢µÄµÇÂ¼ÑéÖ¤²å¼ş").withStyle(ChatFormatting.WHITE)));
-                player.sendSystemMessage(Component.literal("»¶Ó­¼ÓÈë²å¼şÉçÇø ").withStyle(ChatFormatting.WHITE)
-                    .append(Component.literal("QQÈº: ").withStyle(ChatFormatting.AQUA))
-                    .append(Component.literal("528651839").withStyle(ChatFormatting.YELLOW)));
-                player.sendSystemMessage(Component.literal("»ñÈ¡¸ü¶à²å¼ş×ÊÑ¶Óë¼¼ÊõÖ§³Ö").withStyle(ChatFormatting.WHITE));
-                player.sendSystemMessage(Component.empty());
-            }
-            
             String uuid = getPlayerUUID(player);
             
             if (!passwords.containsKey(uuid)) {
@@ -574,18 +565,19 @@ public class AuthShield {
 
     public void startTimer(Player player) {
         String uuid = getPlayerUUID(player);
-        ServerPlayer serverPlayer = (ServerPlayer)player;
         TimerTask loginTask = new TimerTask() {
             @Override
             public void run() {
                 if (!isLoggedIn(player)) {
-                    ((ServerPlayer)player).connection.disconnect(Config.getMessage("authshield.login.timeout"));
+                    ((ServerPlayer)player).connection.disconnect(
+                        Config.getMessage("authshield.login.timeout", 
+                            Config.getLoginTimeoutSeconds()));
                     loginTasks.remove(uuid);
                 }
             }
         };
         loginTasks.put(uuid, loginTask);
-        this.timer.schedule(loginTask, LOGIN_TIMEOUT_MILLIS);
+        this.timer.schedule(loginTask, Config.getLoginTimeoutSeconds() * 1000L);
     }
 
     private static void restrictPlayer(Player player) {
@@ -634,8 +626,12 @@ public class AuthShield {
     }
 
     private static void showPersistentTitle(ServerPlayer player, Component title, Component subtitle) {
-        // è®¾ç½®æ ‡é¢˜æ˜¾ç¤ºæ—¶é—´
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 999999, 20));
+        // è®¾ç½®ä¸€ä¸ªéå¸¸é•¿çš„æŒç»­æ—¶é—´ï¼ˆ24å°æ—¶ï¼‰ï¼Œç¡®ä¿æ ‡é¢˜æŒç»­æ˜¾ç¤º
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(
+            0, // æ— æ·¡å…¥æ•ˆæœ
+            20 * 60 * 60 * 24, // 24å°æ—¶çš„tickæ•°
+            0  // æ— æ·¡å‡ºæ•ˆæœ
+        ));
         // æ˜¾ç¤ºæ ‡é¢˜å’Œå‰¯æ ‡é¢˜
         player.connection.send(new ClientboundSetTitleTextPacket(title));
         player.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));

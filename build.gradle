@@ -5,6 +5,11 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.78'
 }
 
+// 添加编码设置
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 version = mod_version
 group = mod_group_id
 

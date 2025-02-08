@@ -144,7 +144,7 @@ The plugin will automatically create configuration files on first run:
 ## 🔧 Requirements
 
 - ☕ Java 17+
-- 🎮 Minecraft 1.20.x
+- 🎮 Minecraft 1.21.1
 - 🛠️ NeoForge Server
 
 ## 💬 Support

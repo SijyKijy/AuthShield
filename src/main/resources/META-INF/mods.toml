@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://github.com/yourusername/authshield/issues"
+
+[[mods]]
+modId="authshield"
+version="${mod_version}"
+displayName="AuthShield"
+# updateJSONURL="https://change.me.example.invalid/updates.json"
+# displayURL="https://change.me.to.your.mods.homepage.example.invalid/"
+logoFile="authshield.png"
+credits="Thanks for this mod goes to Java and NeoForge"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+[[dependencies.authshield]]
+modId="neoforge"
+type="required"
+versionRange="${neo_version_range}"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.authshield]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="SERVER" 

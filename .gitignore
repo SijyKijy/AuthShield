@@ -117,3 +117,42 @@ runs/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# Eclipse
+*.launch
+.settings/
+.metadata/
+.classpath
+.project
+bin/
+
+# VSCode
+.vscode/
+.settings/
+.classpath
+.project
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Minecraft
+run/
+logs/
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock

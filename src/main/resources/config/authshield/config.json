@@ -1,4 +1,8 @@
 {
+  "settings": {
+    "language": "zh_cn",
+    "debug": false
+  },
   "login": {
     "timeout": {
       "enabled": true,

@@ -47,6 +47,80 @@ AuthShield 是一个专为 Minecraft NeoForge 服务器设计的登录验证插�
    └── 📄 translations.json - 语言文件
 ```
 
+### 配置文件说明
+
+`config.json` 包含以下主要配置项：
+
+#### 🌏 基础设置
+```json
+"settings": {
+    "language": "zh_cn",     // 语言设置：zh_cn(中文)或en_us(英文)
+    "debug": false           // 是否启用调试模式
+}
+```
+
+#### 🕒 登录设置
+```json
+"login": {
+    "timeout": {
+        "enabled": true,      // 是否启用登录超时
+        "seconds": 60,        // 超时时间（秒）
+        "message": "..."      // 超时提示消息
+    },
+    "attempts": {
+        "max": 3,            // 最大尝试次数
+        "timeout_minutes": 10 // 超出尝试次数后的冷却时间（分钟）
+    }
+}
+```
+
+#### 🔑 密码要求
+```json
+"password": {
+    "min_length": 6,         // 最小长度
+    "max_length": 32,        // 最大长度
+    "require_special_char": false,  // 是否需要特殊字符
+    "require_number": false,        // 是否需要数字
+    "require_uppercase": false,     // 是否需要大写字母
+    "hash_algorithm": "SHA-256"     // 密码加密算法
+}
+```
+
+#### 🛡️ 限制设置
+```json
+"restrictions": {
+    "gamemode": "spectator",    // 未登录时的游戏模式
+    "effects": [                // 未登录时的状态效果
+        {
+            "id": "minecraft:slow_falling",
+            "amplifier": 255,
+            "particles": false,
+            "icon": false
+        }
+    ],
+    "allowed_commands": [       // 未登录时允许使用的命令
+        "login", "l", "register", "reg"
+    ]
+}
+```
+
+#### 💬 消息设置
+```json
+"messages": {
+    "title": {
+        "enabled": true,    // 是否启用标题
+        "fade_in": 10,      // 淡入时间
+        "stay": 70,         // 停留时间
+        "fade_out": 20,     // 淡出时间
+        "text": "..."       // 标题文本
+    },
+    "subtitle": {
+        "enabled": true,    // 是否启用副标题
+        "text": "..."       // 副标题文本
+    }
+}
+```
+
 ## 📌 命令系统
 
 ### 玩家命令

@@ -1,6 +1,6 @@
 # AuthShield - 我的世界服务器登录验证插件
 
-![Version](https://img.shields.io/badge/NeoForge-1.20.x-blue)
+![Version](https://img.shields.io/badge/NeoForge-1.21.1-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Language](https://img.shields.io/badge/Language-Java-orange)
 

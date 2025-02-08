@@ -1,7 +1,7 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-issueTrackerURL="https://github.com/yourusername/authshield/issues"
+issueTrackerURL="https://github.com/xmk2333/AuthShield/issues"
 
 [[mods]]
 modId="authshield"
@@ -9,9 +9,9 @@ version="${mod_version}"
 displayName="AuthShield"
 # updateJSONURL="https://change.me.example.invalid/updates.json"
 # displayURL="https://change.me.to.your.mods.homepage.example.invalid/"
-logoFile="authshield.png"
-credits="Thanks for this mod goes to Java and NeoForge"
-authors="${mod_authors}"
+logoFile="logo.png"
+credits="感谢所有为本项目提供支持和反馈的用户！"
+authors="xmk2333"
 description='''${mod_description}'''
 
 [[dependencies.authshield]]

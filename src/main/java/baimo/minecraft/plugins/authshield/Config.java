@@ -54,16 +54,16 @@ public class Config {
 
     public static final ModConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER.comment("What you want the introduction message to be for the magic number").define("magicNumberIntroduction", "The magic number is... ");
 
-    // a list of strings that are treated as resource locations for items
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER.comment("A list of items to log on common setup.").defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
 
-    // Login settings
+
     public static boolean loginTimeoutEnabled;
     public static int loginTimeoutSeconds;
     public static int maxLoginAttempts;
     public static int loginAttemptTimeoutMinutes;
 
-    // Password settings
+
     public static int minPasswordLength;
     public static int maxPasswordLength;
     public static boolean requireSpecialChar;
@@ -71,12 +71,10 @@ public class Config {
     public static boolean requireUppercase;
     public static String hashAlgorithm;
 
-    // Restriction settings
     public static String preLoginGamemode;
     public static List<PreLoginEffect> preLoginEffects;
     public static Set<String> allowedCommands;
 
-    // Message settings
     public static boolean titleEnabled;
     public static boolean subtitleEnabled;
     public static boolean actionbarEnabled;
@@ -93,7 +91,6 @@ public class Config {
     public static final String PASSWORD_FILE = "passwords.json";
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
 
-    // Message fields
     public static String loginTitle;
     public static String loginSubtitle;
     public static String registerMessage;
@@ -130,13 +127,11 @@ public class Config {
                 }
             }
 
-            // 使用UTF-8编码读取配置文件
             try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
                 config = new Gson().fromJson(reader, JsonObject.class);
                 LOGGER.info(getLogMessage("config.loaded"), configPath);
             }
             
-            // Load login settings
             JsonObject login = config.getAsJsonObject("login");
             JsonObject timeout = login.getAsJsonObject("timeout");
             loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
@@ -146,7 +141,6 @@ public class Config {
             maxLoginAttempts = attempts.get("max").getAsInt();
             loginAttemptTimeoutMinutes = attempts.get("timeout_minutes").getAsInt();
 
-            // Load password settings
             JsonObject password = config.getAsJsonObject("password");
             minPasswordLength = password.get("min_length").getAsInt();
             maxPasswordLength = password.get("max_length").getAsInt();
@@ -155,7 +149,6 @@ public class Config {
             requireUppercase = password.get("require_uppercase").getAsBoolean();
             hashAlgorithm = password.get("hash_algorithm").getAsString();
 
-            // Load restriction settings
             JsonObject restrictions = config.getAsJsonObject("restrictions");
             preLoginGamemode = restrictions.get("gamemode").getAsString();
             
@@ -177,7 +170,6 @@ public class Config {
                 allowedCommands.add(cmd.getAsString());
             }
 
-            // Load message settings
             JsonObject messages = config.getAsJsonObject("messages");
             JsonObject title = messages.getAsJsonObject("title");
             titleEnabled = title.get("enabled").getAsBoolean();
@@ -199,11 +191,9 @@ public class Config {
             Path langDir = Path.of("config/authshield/lang");
             Files.createDirectories(langDir);
 
-            // 复制默认语言文件
             copyLanguageFile(langDir, "en_us.json");
             copyLanguageFile(langDir, "zh_cn.json");
 
-            // 根据配置加载对应语言文件
             String lang = config.getAsJsonObject("settings").get("language").getAsString();
             Path langFile = langDir.resolve(lang + ".json");
 
@@ -261,7 +251,6 @@ public class Config {
         return Component.literal(String.format(text, args));
     }
 
-    // Validate password
     public static boolean validatePassword(String password, Component[] error) {
         if (password.length() < minPasswordLength) {
             error[0] = getMessage("authshield.register.password.tooshort", minPasswordLength);
@@ -286,7 +275,7 @@ public class Config {
         return true;
     }
     
-    // Effect configuration class
+
     public static class PreLoginEffect {
         public final String id;
         public final int amplifier;
@@ -301,7 +290,7 @@ public class Config {
         }
     }
     
-    // Helper methods
+
     public static boolean isCommandAllowed(String command) {
         return allowedCommands.contains(command);
     }
@@ -358,7 +347,7 @@ public class Config {
     public static double getFirstSpawnZ() { return firstSpawnZ; }
     public static String getFirstSpawnWorld() { return firstSpawnWorld; }
 
-    // ���ӻ�ȡ��־��Ϣ�ķ���
+
     public static String getLogMessage(String key) {
         if (currentLanguage.equals("zh_cn")) {
             switch (key) {
@@ -391,7 +380,7 @@ public class Config {
         return currentLanguage;
     }
 
-    // 添加重载功能
+
     public static boolean reload() {
         try {
             loadConfig();
@@ -403,7 +392,7 @@ public class Config {
         }
     }
 
-    // 添加获取登录超时时间的方法
+
     public static int getLoginTimeoutSeconds() {
         return loginTimeoutSeconds;
     }

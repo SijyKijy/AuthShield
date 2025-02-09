@@ -1,4 +1,3 @@
-// Source code is decompiled from a .class file using FernFlower decompiler.
 package baimo.minecraft.plugins.authshield;
 
 import java.io.FileReader;
@@ -28,7 +27,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.logging.LogUtils;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -87,15 +85,12 @@ public class AuthShield {
 
     public AuthShield(IEventBus modEventBus, ModContainer modContainer) {
         try {
-            // Register event listeners
             NeoForge.EVENT_BUS.register(this);
             modEventBus.register(Config.class);
             
-            // Initialize config and translations
             Config.loadConfig();
             Config.loadTranslations();
             
-            // Show startup message
             LOGGER.info("");
             LOGGER.info(ChatFormatting.GRAY + "[ " + 
                        ChatFormatting.LIGHT_PURPLE + "AuthShield" + 
@@ -149,7 +144,6 @@ public class AuthShield {
                 return 1;
             }
 
-            // 验证密码规则
             Component[] error = new Component[1];
             if (!Config.validatePassword(password, error)) {
                 player.sendSystemMessage(error[0]);
@@ -167,14 +161,12 @@ public class AuthShield {
                 task.cancel();
             }
 
-            // 清除限制效果
             player.removeAllEffects();
             if (!player.getPersistentData().contains("loginMode")) {
                 player.getPersistentData().putString("loginMode", "survival");
             }
             changeGameMode(player, player.getPersistentData().getString("loginMode"));
 
-            // 清除标题
             if (Config.titleEnabled) {
                 ((ServerPlayer)player).connection.send(new ClientboundSetTitleTextPacket(Component.empty()));
                 ((ServerPlayer)player).connection.send(new ClientboundSetSubtitleTextPacket(Component.empty()));
@@ -287,7 +279,6 @@ public class AuthShield {
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        // 注册命令
         LiteralArgumentBuilder<CommandSourceStack> register = Commands.literal("register")
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
@@ -297,7 +288,6 @@ public class AuthShield {
                 .then(Commands.argument("confirmPassword", StringArgumentType.word())
                     .executes(AuthShield::signUp)));
 
-        // 注册简化命令 /reg
         LiteralArgumentBuilder<CommandSourceStack> registerAlias = Commands.literal("reg")
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
@@ -352,7 +342,6 @@ public class AuthShield {
                 return 1;
             });
 
-        // 添加管理员命令
         help.then(Commands.literal("unregister")
             .requires(source -> source.hasPermission(2))
             .then(Commands.argument("player", StringArgumentType.word())
@@ -581,32 +570,32 @@ public class AuthShield {
     }
 
     private static void restrictPlayer(Player player) {
-        // Add slowness effect
+
         MobEffectInstance slownessEffect = new MobEffectInstance(
             MobEffects.MOVEMENT_SLOWDOWN,
             Integer.MAX_VALUE,
-            2,  // Level III slowness
-            false,  // No particles
-            false,  // No icon
-            false   // No ambient
+            2,  
+            false,  
+            false,  
+            false   
         );
         player.addEffect(slownessEffect);
 
-        // Add resistance effect for invulnerability
+
         MobEffectInstance resistanceEffect = new MobEffectInstance(
             MobEffects.DAMAGE_RESISTANCE,
             Integer.MAX_VALUE,
-            255,  // Max level for invulnerability
+            255, 
             false,
             false,
             false
         );
         player.addEffect(resistanceEffect);
 
-        // Set to spectator mode
+
         changeGameMode(player, "spectator");
         
-        // Show title and messages
+
         String uuid = getPlayerUUID(player);
         if (!passwords.containsKey(uuid)) {
             if (Config.titleEnabled) {
@@ -626,13 +615,13 @@ public class AuthShield {
     }
 
     private static void showPersistentTitle(ServerPlayer player, Component title, Component subtitle) {
-        // 设置一个非常长的持续时间（24小时），确保标题持续显示
+
         player.connection.send(new ClientboundSetTitlesAnimationPacket(
-            0, // 无淡入效果
-            20 * 60 * 60 * 24, // 24小时的tick数
-            0  // 无淡出效果
+            0, 
+            20 * 60 * 60 * 24, 
+            0  
         ));
-        // 显示标题和副标题
+
         player.connection.send(new ClientboundSetTitleTextPacket(title));
         player.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));
     }
@@ -710,7 +699,6 @@ public class AuthShield {
         ServerPlayer targetPlayer = source.getServer().getPlayerList().getPlayerByName(targetName);
         
         if (targetPlayer != null) {
-            // 找到在线玩家，获取其 UUID
             String uuid = getPlayerUUID(targetPlayer);
             if (passwords.containsKey(uuid)) {
                 passwords.remove(uuid);
@@ -762,7 +750,6 @@ public class AuthShield {
         double y = player.getY();
         double z = player.getZ();
 
-        // 在玩家位置生成螺旋上升的粒子
         for (int i = 0; i < 2; i++) {
             for (double y1 = 0; y1 < 2; y1 += 0.2) {
                 double radius = 0.5;
@@ -771,10 +758,10 @@ public class AuthShield {
                 double pz = z + Math.sin(angle) * radius;
                 level.sendParticles(
                     ParticleTypes.END_ROD,
-                    px, y + y1, pz,  // 位置
-                    1,  // 粒子数量
-                    0, 0, 0,  // 速度
-                    0  // 额外数据
+                    px, y + y1, pz, 
+                    1,  
+                    0, 0, 0,  
+                    0  
                 );
             }
         }

@@ -1,0 +1,162 @@
+package baimo.minecraft.plugins.authshield;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+<<<<<<< HEAD
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandSourceStack;
+
+import baimo.minecraft.plugins.authshield.security.PasswordManager;
+import baimo.minecraft.plugins.authshield.commands.CommandManager;
+import baimo.minecraft.plugins.authshield.listeners.AuthEventListener;
+import baimo.minecraft.plugins.authshield.player.PlayerManager;
+=======
+
+import baimo.minecraft.plugins.authshield.commands.CommandManager;
+import baimo.minecraft.plugins.authshield.listeners.AuthEventListener;
+import baimo.minecraft.plugins.authshield.player.PlayerManager;
+import baimo.minecraft.plugins.authshield.security.PasswordManager;
+import net.minecraft.ChatFormatting;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+>>>>>>> fd7e74b7a304e54c9ba72aee68565ee8beb30883
+
+@Mod(value = AuthShield.MODID)
+public class AuthShield {
+    public static final String MODID = "authshield";
+    private static final Logger LOGGER = LogManager.getLogger("authshield");
+    private static AuthShield instance;
+    
+    private PasswordManager passwordManager;
+    private PlayerManager playerManager;
+    private CommandManager commandManager;
+    private AuthEventListener eventListener;
+
+    public AuthShield(IEventBus modEventBus, ModContainer modContainer) {
+        if (FMLEnvironment.dist != Dist.DEDICATED_SERVER) {
+            LOGGER.warn("AuthShield is designed for server-side only!");
+            return;
+        }
+        
+        instance = this;
+        
+        try {
+<<<<<<< HEAD
+            // 初始化配置
+            Config.loadConfig();
+            Config.loadTranslations();
+=======
+            // 注册事件监听器
+            modEventBus.register(Config.class);
+            NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+            
+            // 初始化配置
+            Config.loadConfig();
+            Config.loadTranslations();
+            LOGGER.info("当前语言: " + Config.getCurrentLanguage());
+>>>>>>> fd7e74b7a304e54c9ba72aee68565ee8beb30883
+            
+            // 初始化各个管理器
+            this.passwordManager = new PasswordManager();
+            this.playerManager = new PlayerManager();
+            this.commandManager = new CommandManager(this);
+            this.eventListener = new AuthEventListener(this);
+            
+            // 注册事件监听器
+            NeoForge.EVENT_BUS.register(eventListener);
+<<<<<<< HEAD
+            NeoForge.EVENT_BUS.register(this);
+            modEventBus.register(Config.class);
+            
+            // 显示欢迎信息
+            LOGGER.info("");
+            LOGGER.info("[ AuthShield ]");
+                       
+            if (Config.getCurrentLanguage().equals("zh_cn")) {
+                LOGGER.info("感谢使用千屈的登录验证插件");
+                LOGGER.info("欢迎加入开发者群 QQ群: 528651839");
+                LOGGER.info("获取更多资讯与技术支持");
+=======
+            
+            // 显示欢迎信息
+            LOGGER.info("");
+            LOGGER.info(ChatFormatting.GRAY + "[ " + 
+                       ChatFormatting.LIGHT_PURPLE + "AuthShield" + 
+                       ChatFormatting.GRAY + " ]");
+                       
+            if (Config.getCurrentLanguage().equals("zh_cn")) {
+                LOGGER.info(ChatFormatting.WHITE + "感谢使用 " + 
+                           ChatFormatting.LIGHT_PURPLE + "千屈" +
+                           ChatFormatting.WHITE + " 的登录验证插件");
+                LOGGER.info(ChatFormatting.WHITE + "欢迎加入开发者群 " +
+                           ChatFormatting.AQUA + "QQ群: " + 
+                           ChatFormatting.YELLOW + "528651839");
+                LOGGER.info(ChatFormatting.WHITE + "获取更多资讯与技术支持");
+>>>>>>> fd7e74b7a304e54c9ba72aee68565ee8beb30883
+            }
+            
+            LOGGER.info("");
+            LOGGER.info(Config.getLogMessage("mod.initialized"));
+        } catch (Exception e) {
+            LOGGER.error(Config.getLogMessage("mod.init_failed"), e);
+        }
+    }
+
+<<<<<<< HEAD
+=======
+    private void onServerStarting(ServerStartingEvent event) {
+        // 重新加载配置确保语言设置正确
+        Config.reload();
+        // 注册命令
+        commandManager.registerCommands(event.getServer().getCommands().getDispatcher());
+    }
+
+>>>>>>> fd7e74b7a304e54c9ba72aee68565ee8beb30883
+    public static AuthShield getInstance() {
+        return instance;
+    }
+
+    public PasswordManager getPasswordManager() {
+        return passwordManager;
+    }
+
+    public PlayerManager getPlayerManager() {
+        return playerManager;
+    }
+
+    public CommandManager getCommandManager() {
+        return commandManager;
+    }
+
+    public AuthEventListener getEventListener() {
+        return eventListener;
+    }
+
+    public static Logger getLogger() {
+        return LOGGER;
+    }
+<<<<<<< HEAD
+
+    @net.neoforged.bus.api.SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        commandManager.registerCommands(event.getServer().getCommands().getDispatcher());
+    }
+}
+=======
+}
+>>>>>>> fd7e74b7a304e54c9ba72aee68565ee8beb30883

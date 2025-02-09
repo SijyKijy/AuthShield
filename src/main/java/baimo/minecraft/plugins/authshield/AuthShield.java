@@ -7,6 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import javax.crypto.spec.PBEKeySpec;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -69,6 +73,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import javax.crypto.SecretKeyFactory;
+
 @Mod(
         value = "authshield",
         dist = {Dist.DEDICATED_SERVER}
@@ -82,6 +88,10 @@ public class AuthShield {
     private static final Gson gson = new Gson();
     public static final String MODID = "authshield";
     private static final Logger LOGGER = LogManager.getLogger("authshield");
+    private static final int ITERATIONS = 65536;
+    private static final int KEY_LENGTH = 256;
+    private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public AuthShield(IEventBus modEventBus, ModContainer modContainer) {
         try {
@@ -517,20 +527,57 @@ public class AuthShield {
 
     private static String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            byte[] var4 = hashedBytes;
-            int var5 = hashedBytes.length;
+            byte[] salt = new byte[16];
+            SECURE_RANDOM.nextBytes(salt);
+            
+            PBEKeySpec spec = new PBEKeySpec(
+                password.toCharArray(),
+                salt,
+                ITERATIONS,
+                KEY_LENGTH
+            );
+            
+            SecretKeyFactory skf = SecretKeyFactory.getInstance(ALGORITHM);
+            byte[] hash = skf.generateSecret(spec).getEncoded();
+            spec.clearPassword();
+            
+            // 将盐值和哈希值组合在一起存储
+            byte[] combined = new byte[salt.length + hash.length];
+            System.arraycopy(salt, 0, combined, 0, salt.length);
+            System.arraycopy(hash, 0, combined, salt.length, hash.length);
+            
+            return Base64.getEncoder().encodeToString(combined);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            LOGGER.error(Config.getLogMessage("password.hash.failed"), e);
+            throw new RuntimeException(e);
+        }
+    }
 
-            for(int var6 = 0; var6 < var5; ++var6) {
-                byte b = var4[var6];
-                sb.append(String.format("%02x", b));
-            }
-
-            return sb.toString();
-        } catch (NoSuchAlgorithmException var8) {
-            throw new RuntimeException(var8);
+    private static boolean verifyPassword(String password, String storedHash) {
+        try {
+            byte[] combined = Base64.getDecoder().decode(storedHash);
+            
+            // 分离盐值和哈希值
+            byte[] salt = new byte[16];
+            byte[] hash = new byte[combined.length - 16];
+            System.arraycopy(combined, 0, salt, 0, salt.length);
+            System.arraycopy(combined, salt.length, hash, 0, hash.length);
+            
+            PBEKeySpec spec = new PBEKeySpec(
+                password.toCharArray(),
+                salt,
+                ITERATIONS,
+                KEY_LENGTH
+            );
+            
+            SecretKeyFactory skf = SecretKeyFactory.getInstance(ALGORITHM);
+            byte[] testHash = skf.generateSecret(spec).getEncoded();
+            spec.clearPassword();
+            
+            return MessageDigest.isEqual(hash, testHash);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            LOGGER.error(Config.getLogMessage("password.verify.failed"), e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -547,7 +594,7 @@ public class AuthShield {
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("加载密码文件失败", e);
+            LOGGER.error(Config.getLogMessage("password.load.failed"), e);
         }
     }
 
@@ -647,10 +694,10 @@ public class AuthShield {
             
             try (FileWriter writer = new FileWriter(path.toFile())) {
                 gson.toJson(passwords, writer);
-                LOGGER.info("密码已保存到文件: {}", path);
+                LOGGER.info(Config.getLogMessage("password.saved"), path);
             }
         } catch (IOException e) {
-            LOGGER.error("保存密码文件失败", e);
+            LOGGER.error(Config.getLogMessage("password.save.failed"), e);
         }
     }
 

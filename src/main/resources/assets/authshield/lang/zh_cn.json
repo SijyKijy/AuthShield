@@ -49,5 +49,10 @@
   "authshield.usage.changepassword": "§7➤ 用法：§f/changepassword §7<旧密码> §7<新密码> §7- 修改您的密码",
   "authshield.usage.cp": "§7➤ 用法：§f/cp §7<旧密码> §7<新密码> §7- 修改您的密码",
   "authshield.reload.success": "§a✔ 配置重载成功！",
-  "authshield.reload.failed": "§c✖ 配置重载失败，请查看控制台获取详细信息"
+  "authshield.reload.failed": "§c✖ 配置重载失败，请查看控制台获取详细信息",
+  "authshield.password.load.failed": "§c✖ 加载密码文件失败",
+  "authshield.password.saved": "§a✔ 密码已保存到文件: {}",
+  "authshield.password.save.failed": "§c✖ 保存密码文件失败",
+  "authshield.password.hash.failed": "§c✖ 密码加密失败",
+  "authshield.password.verify.failed": "§c✖ 密码验证失败"
 } 

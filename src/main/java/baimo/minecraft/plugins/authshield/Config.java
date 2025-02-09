@@ -44,26 +44,17 @@ public class Config {
     private static final Logger LOGGER = LogManager.getLogger("authshield");
     private static JsonObject config;
     private static Map<String, String> translations = new HashMap<>();
-    private static String currentLanguage = "en_us"; // Ĭ��Ӣ��
+    private static String currentLanguage = "en_us"; 
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
-    private static final ModConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER.comment("Whether to log the dirt block on common setup").define("logDirtBlock", true);
-
-    private static final ModConfigSpec.IntValue MAGIC_NUMBER = BUILDER.comment("A magic number").defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
-
-    public static final ModConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER.comment("What you want the introduction message to be for the magic number").define("magicNumberIntroduction", "The magic number is... ");
-
-
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER.comment("A list of items to log on common setup.").defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
-
-
+    // 登录相关配置
     public static boolean loginTimeoutEnabled;
     public static int loginTimeoutSeconds;
     public static int maxLoginAttempts;
     public static int loginAttemptTimeoutMinutes;
 
-
+    // 密码相关配置
     public static int minPasswordLength;
     public static int maxPasswordLength;
     public static boolean requireSpecialChar;
@@ -71,10 +62,12 @@ public class Config {
     public static boolean requireUppercase;
     public static String hashAlgorithm;
 
+    // 游戏限制配置
     public static String preLoginGamemode;
     public static List<PreLoginEffect> preLoginEffects;
     public static Set<String> allowedCommands;
 
+    // 消息显示配置
     public static boolean titleEnabled;
     public static boolean subtitleEnabled;
     public static boolean actionbarEnabled;
@@ -82,15 +75,11 @@ public class Config {
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
-    public static boolean logDirtBlock;
-    public static int magicNumber;
-    public static String magicNumberIntroduction;
-    public static Set<Item> items;
-
     public static final String MODID = "authshield";
     public static final String PASSWORD_FILE = "passwords.json";
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
 
+    // 消息文本配置
     public static String loginTitle;
     public static String loginSubtitle;
     public static String registerMessage;
@@ -99,6 +88,7 @@ public class Config {
     public static String loginIncorrect;
     public static String loginTimeout;
 
+    // 出生点配置
     private static double firstSpawnX;
     private static double firstSpawnY;
     private static double firstSpawnZ;

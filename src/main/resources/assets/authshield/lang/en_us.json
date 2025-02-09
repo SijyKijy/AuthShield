@@ -49,5 +49,10 @@
   "authshield.usage.changepassword": "§7Usage: §f/changepassword §7<oldPassword> §7<newPassword> §7- Change your password",
   "authshield.usage.cp": "§7Usage: §f/cp §7<oldPassword> §7<newPassword> §7- Change your password",
   "authshield.reload.success": "§aConfiguration reloaded successfully!",
-  "authshield.reload.failed": "§cFailed to reload configuration, check console for details"
+  "authshield.reload.failed": "§cFailed to reload configuration, check console for details",
+  "authshield.password.load.failed": "§c✖ Failed to load password file",
+  "authshield.password.saved": "§a✔ Passwords saved to file: {}",
+  "authshield.password.save.failed": "§c✖ Failed to save password file",
+  "authshield.password.hash.failed": "§c✖ Failed to hash password",
+  "authshield.password.verify.failed": "§c✖ Failed to verify password"
 } 

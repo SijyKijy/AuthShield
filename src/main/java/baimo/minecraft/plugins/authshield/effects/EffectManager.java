@@ -19,7 +19,7 @@ public class EffectManager {
         }
 
         String uuid = player.getUUID().toString();
-        if (!Config.titleEnabled) {
+        if (!Config.isTitleEnabled()) {
             return;
         }
 
@@ -69,7 +69,7 @@ public class EffectManager {
         }
         
         // 清除标题
-        if (Config.titleEnabled) {
+        if (Config.isTitleEnabled()) {
             serverPlayer.connection.send(new ClientboundSetTitleTextPacket(Component.empty()));
             serverPlayer.connection.send(new ClientboundSetSubtitleTextPacket(Component.empty()));
         }

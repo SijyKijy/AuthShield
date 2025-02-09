@@ -1,23 +1,20 @@
 package baimo.minecraft.plugins.authshield.commands;
 
-import java.util.UUID;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 
+import baimo.minecraft.plugins.authshield.AuthShield;
+import baimo.minecraft.plugins.authshield.Config;
+import baimo.minecraft.plugins.authshield.effects.EffectManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-
-import baimo.minecraft.plugins.authshield.AuthShield;
-import baimo.minecraft.plugins.authshield.Config;
-import baimo.minecraft.plugins.authshield.effects.EffectManager;
 
 public class CommandManager {
     private final AuthShield plugin;

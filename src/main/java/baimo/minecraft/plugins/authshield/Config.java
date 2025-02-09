@@ -35,8 +35,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-@EventBusSubscriber(modid = AuthShield.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = "authshield", bus = EventBusSubscriber.Bus.MOD)
 public class Config {
+    public static void main(String[] args) {
+        // 主方法，用于满足隐式声明类的要求
+    }
+
     private static final Pattern SPECIAL_CHARS = Pattern.compile("[!@#$%^&*(),.?\":{}|<>]");
     private static final Pattern NUMBERS = Pattern.compile("\\d");
     private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
@@ -49,29 +53,29 @@ public class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     // 登录相关配置
-    public static boolean loginTimeoutEnabled;
-    public static int loginTimeoutSeconds;
-    public static int maxLoginAttempts;
-    public static int loginAttemptTimeoutMinutes;
+    private static boolean loginTimeoutEnabled;
+    private static int loginTimeoutSeconds;
+    private static int maxLoginAttempts;
+    private static int loginAttemptTimeoutMinutes;
 
     // 密码相关配置
-    public static int minPasswordLength;
-    public static int maxPasswordLength;
-    public static boolean requireSpecialChar;
-    public static boolean requireNumber;
-    public static boolean requireUppercase;
-    public static String hashAlgorithm;
+    private static int minPasswordLength;
+    private static int maxPasswordLength;
+    private static boolean requireSpecialChar;
+    private static boolean requireNumber;
+    private static boolean requireUppercase;
+    private static String hashAlgorithm;
 
     // 游戏限制配置
-    public static String preLoginGamemode;
-    public static List<PreLoginEffect> preLoginEffects;
-    public static Set<String> allowedCommands;
+    private static String preLoginGamemode;
+    private static List<PreLoginEffect> preLoginEffects;
+    private static Set<String> allowedCommands = new HashSet<>();
 
     // 消息显示配置
-    public static boolean titleEnabled;
-    public static boolean subtitleEnabled;
-    public static boolean actionbarEnabled;
-    public static int actionbarInterval;
+    private static boolean titleEnabled;
+    private static boolean subtitleEnabled;
+    private static boolean actionbarEnabled;
+    private static int actionbarInterval;
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -79,13 +83,13 @@ public class Config {
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
 
     // 消息文本配置
-    public static String loginTitle;
-    public static String loginSubtitle;
-    public static String registerMessage;
-    public static String loginSuccess;
-    public static String loginAlready;
-    public static String loginIncorrect;
-    public static String loginTimeout;
+    private static String loginTitle;
+    private static String loginSubtitle;
+    private static String registerMessage;
+    private static String loginSuccess;
+    private static String loginAlready;
+    private static String loginIncorrect;
+    private static String loginTimeout;
 
     // 出生点配置
     private static double firstSpawnX;
@@ -95,7 +99,9 @@ public class Config {
     private static boolean firstSpawnSet = false;
 
     @SubscribeEvent
-    static void onLoad(final ModConfigEvent event) {
+    public static void onLoad(final ModConfigEvent event) {
+        loadConfig();
+        loadTranslations();
     }
 
     public static void loadConfig() {
@@ -153,7 +159,7 @@ public class Config {
                 ));
             }
             
-            allowedCommands = new HashSet<>();
+            allowedCommands.clear();
             JsonArray commands = restrictions.getAsJsonArray("allowed_commands");
             for (JsonElement cmd : commands) {
                 allowedCommands.add(cmd.getAsString());
@@ -222,6 +228,7 @@ public class Config {
             if (in != null) {
                 try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                     translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
+                    currentLanguage = "en_us";
                 }
             }
         } catch (Exception e) {
@@ -249,15 +256,15 @@ public class Config {
             error[0] = getMessage("authshield.register.password.toolong", maxPasswordLength);
             return false;
         }
-        if (requireSpecialChar && !password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
+        if (requireSpecialChar && !SPECIAL_CHARS.matcher(password).find()) {
             error[0] = getMessage("authshield.register.password.needsymbol");
             return false;
         }
-        if (requireNumber && !password.matches(".*\\d.*")) {
+        if (requireNumber && !NUMBERS.matcher(password).find()) {
             error[0] = getMessage("authshield.register.password.neednumber");
             return false;
         }
-        if (requireUppercase && !password.matches(".*[A-Z].*")) {
+        if (requireUppercase && !UPPERCASE.matcher(password).find()) {
             error[0] = getMessage("authshield.register.password.needupper");
             return false;
         }
@@ -289,7 +296,14 @@ public class Config {
     }
 
     private static boolean validateItemName(final Object obj) {
-        return obj instanceof String itemName && BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(itemName));
+        if (obj instanceof String itemName) {
+            try {
+                return BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(itemName));
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     public static void setFirstSpawn(double x, double y, double z, String world) {
@@ -339,29 +353,29 @@ public class Config {
 
     public static String getLogMessage(String key) {
         if (currentLanguage.equals("zh_cn")) {
-            switch (key) {
-                case "config.created": return "已创建默认配置文件: {}";
-                case "config.not_found": return "在资源文件中找不到默认配置文件 config.json";
-                case "config.loaded": return "已从 {} 加载配置";
-                case "mod.initialized": return "AuthShield 安全系统已加载";
-                case "password.loaded": return "AuthShield 密码数据已加载";
-                case "password.load_failed": return "密码数据加载失败";
-                case "lang.created": return "已创建语言文件: {}";
-                case "lang.loaded": return "已加载语言文件: {}";
-                default: return key;
-            }
+            return switch (key) {
+                case "config.created" -> "已创建默认配置文件: {}";
+                case "config.not_found" -> "在资源文件中找不到默认配置文件 config.json";
+                case "config.loaded" -> "已从 {} 加载配置";
+                case "mod.initialized" -> "AuthShield 安全系统已加载";
+                case "password.loaded" -> "AuthShield 密码数据已加载";
+                case "password.load_failed" -> "密码数据加载失败";
+                case "lang.created" -> "已创建语言文件: {}";
+                case "lang.loaded" -> "已加载语言文件: {}";
+                default -> key;
+            };
         } else {
-            switch (key) {
-                case "config.created": return "Created default config file: {}";
-                case "config.not_found": return "Default config.json not found in resources";
-                case "config.loaded": return "Loaded config from {}";
-                case "mod.initialized": return "AuthShield security system loaded";
-                case "password.loaded": return "AuthShield password data loaded";
-                case "password.load_failed": return "Failed to load password data";
-                case "lang.created": return "Created language file: {}";
-                case "lang.loaded": return "Loaded language file: {}";
-                default: return key;
-            }
+            return switch (key) {
+                case "config.created" -> "Created default config file: {}";
+                case "config.not_found" -> "Default config.json not found in resources";
+                case "config.loaded" -> "Loaded config from {}";
+                case "mod.initialized" -> "AuthShield security system loaded";
+                case "password.loaded" -> "AuthShield password data loaded";
+                case "password.load_failed" -> "Failed to load password data";
+                case "lang.created" -> "Created language file: {}";
+                case "lang.loaded" -> "Loaded language file: {}";
+                default -> key;
+            };
         }
     }
 
@@ -384,5 +398,93 @@ public class Config {
 
     public static int getLoginTimeoutSeconds() {
         return loginTimeoutSeconds;
+    }
+
+    public static boolean isLoginTimeoutEnabled() {
+        return loginTimeoutEnabled;
+    }
+
+    public static int getMaxLoginAttempts() {
+        return maxLoginAttempts;
+    }
+
+    public static int getLoginAttemptTimeoutMinutes() {
+        return loginAttemptTimeoutMinutes;
+    }
+
+    public static int getMinPasswordLength() {
+        return minPasswordLength;
+    }
+
+    public static int getMaxPasswordLength() {
+        return maxPasswordLength;
+    }
+
+    public static boolean isRequireSpecialChar() {
+        return requireSpecialChar;
+    }
+
+    public static boolean isRequireNumber() {
+        return requireNumber;
+    }
+
+    public static boolean isRequireUppercase() {
+        return requireUppercase;
+    }
+
+    public static String getHashAlgorithm() {
+        return hashAlgorithm;
+    }
+
+    public static String getPreLoginGamemode() {
+        return preLoginGamemode;
+    }
+
+    public static List<PreLoginEffect> getPreLoginEffects() {
+        return preLoginEffects;
+    }
+
+    public static boolean isTitleEnabled() {
+        return titleEnabled;
+    }
+
+    public static boolean isSubtitleEnabled() {
+        return subtitleEnabled;
+    }
+
+    public static boolean isActionbarEnabled() {
+        return actionbarEnabled;
+    }
+
+    public static int getActionbarInterval() {
+        return actionbarInterval;
+    }
+
+    public static String getLoginTitle() {
+        return loginTitle;
+    }
+
+    public static String getLoginSubtitle() {
+        return loginSubtitle;
+    }
+
+    public static String getRegisterMessage() {
+        return registerMessage;
+    }
+
+    public static String getLoginSuccess() {
+        return loginSuccess;
+    }
+
+    public static String getLoginAlready() {
+        return loginAlready;
+    }
+
+    public static String getLoginIncorrect() {
+        return loginIncorrect;
+    }
+
+    public static String getLoginTimeout() {
+        return loginTimeout;
     }
 }

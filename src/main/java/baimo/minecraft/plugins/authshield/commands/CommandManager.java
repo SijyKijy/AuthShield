@@ -259,15 +259,15 @@ public class CommandManager {
             // 尝试从缓存中查找离线玩家
             var profileCache = source.getServer().getProfileCache();
             if (profileCache != null) {
-                profileCache.get(targetName)
-                    .ifPresent(profile -> {
-                        String uuid = profile.getId().toString();
-                        if (plugin.getPasswordManager().hasPassword(uuid)) {
-                            plugin.getPasswordManager().removePassword(uuid);
-                            source.sendSuccess(() -> 
-                                Config.getMessage("authshield.unregister.success", targetName), true);
-                        }
-                    });
+                var profile = profileCache.get(targetName);
+                if (profile.isPresent()) {
+                    String uuid = profile.get().getId().toString();
+                    if (plugin.getPasswordManager().hasPassword(uuid)) {
+                        plugin.getPasswordManager().removePassword(uuid);
+                        source.sendSuccess(() -> 
+                            Config.getMessage("authshield.unregister.success", targetName), true);
+                    }
+                }
             }
         }
 

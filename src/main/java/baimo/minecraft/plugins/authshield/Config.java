@@ -23,13 +23,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.common.ModConfigSpec;
 
 @EventBusSubscriber(modid = "authshield", bus = EventBusSubscriber.Bus.MOD)
 public class Config {
@@ -66,6 +66,13 @@ public class Config {
     private static boolean actionbarEnabled;
     private static int actionbarInterval;
 
+    // 出生点配置
+    private static double firstSpawnX;
+    private static double firstSpawnY;
+    private static double firstSpawnZ;
+    private static String firstSpawnWorld;
+    private static boolean firstSpawnSet = false;
+
     public static final String MODID = "authshield";
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
 
@@ -77,13 +84,6 @@ public class Config {
     private static String loginAlready;
     private static String loginIncorrect;
     private static String loginTimeout;
-
-    // 出生点配置
-    private static double firstSpawnX;
-    private static double firstSpawnY;
-    private static double firstSpawnZ;
-    private static String firstSpawnWorld;
-    private static boolean firstSpawnSet = false;
 
     @SubscribeEvent
     public static void onLoad(final ModConfigEvent event) {
@@ -98,76 +98,113 @@ public class Config {
 
             Path configPath = configDir.resolve("config.json");
             if (Files.notExists(configPath)) {
-                try (InputStream in = Config.class.getResourceAsStream("/config/authshield/config.json")) {
-                    if (in != null) {
-                        Files.copy(in, configPath);
-                        LOGGER.info(getLogMessage("config.created"), configPath);
-                    } else {
-                        LOGGER.error(getLogMessage("config.not_found"));
-                        return;
-                    }
-                }
+                createDefaultConfig(configPath);
             }
 
-            try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
-                config = new Gson().fromJson(reader, JsonObject.class);
-                LOGGER.info(getLogMessage("config.loaded"), configPath);
-            }
-            
-            JsonObject login = config.getAsJsonObject("login");
-            JsonObject timeout = login.getAsJsonObject("timeout");
-            loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
-            loginTimeoutSeconds = timeout.get("seconds").getAsInt();
-            
-            JsonObject attempts = login.getAsJsonObject("attempts");
-            maxLoginAttempts = attempts.get("max").getAsInt();
-            loginAttemptTimeoutMinutes = attempts.get("timeout_minutes").getAsInt();
-
-            JsonObject password = config.getAsJsonObject("password");
-            minPasswordLength = password.get("min_length").getAsInt();
-            maxPasswordLength = password.get("max_length").getAsInt();
-            requireSpecialChar = password.get("require_special_char").getAsBoolean();
-            requireNumber = password.get("require_number").getAsBoolean();
-            requireUppercase = password.get("require_uppercase").getAsBoolean();
-            hashAlgorithm = password.get("hash_algorithm").getAsString();
-
-            JsonObject restrictions = config.getAsJsonObject("restrictions");
-            preLoginGamemode = restrictions.get("gamemode").getAsString();
-            
-            preLoginEffects = new ArrayList<>();
-            JsonArray effects = restrictions.getAsJsonArray("effects");
-            for (JsonElement effect : effects) {
-                JsonObject effectObj = effect.getAsJsonObject();
-                preLoginEffects.add(new PreLoginEffect(
-                    effectObj.get("id").getAsString(),
-                    effectObj.get("amplifier").getAsInt(),
-                    effectObj.get("particles").getAsBoolean(),
-                    effectObj.get("icon").getAsBoolean()
-                ));
-            }
-            
-            allowedCommands.clear();
-            JsonArray commands = restrictions.getAsJsonArray("allowed_commands");
-            for (JsonElement cmd : commands) {
-                allowedCommands.add(cmd.getAsString());
-            }
-
-            JsonObject messages = config.getAsJsonObject("messages");
-            JsonObject title = messages.getAsJsonObject("title");
-            titleEnabled = title.get("enabled").getAsBoolean();
-
-            JsonObject subtitle = messages.getAsJsonObject("subtitle");
-            subtitleEnabled = subtitle.get("enabled").getAsBoolean();
-
-            JsonObject actionbar = messages.getAsJsonObject("actionbar");
-            actionbarEnabled = actionbar.get("enabled").getAsBoolean();
-            actionbarInterval = actionbar.get("interval").getAsInt();
+            loadConfigFile(configPath);
             
         } catch (IOException e) {
             LOGGER.error("Failed to load config: {}", e.getMessage(), e);
+        } catch (JsonParseException e) {
+            LOGGER.error("Failed to parse config JSON: {}", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Unexpected error loading config: {}", e.getMessage(), e);
         }
+    }
+
+    private static void createDefaultConfig(Path configPath) throws IOException {
+        try (InputStream in = Config.class.getResourceAsStream("/config/authshield/config.json")) {
+            if (in != null) {
+                Files.copy(in, configPath);
+                LOGGER.info(getLogMessage("config.created"), configPath);
+            } else {
+                LOGGER.error(getLogMessage("config.not_found"));
+            }
+        }
+    }
+
+    private static void loadConfigFile(Path configPath) throws IOException {
+        try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
+            config = new Gson().fromJson(reader, JsonObject.class);
+            LOGGER.info(getLogMessage("config.loaded"), configPath);
+            
+            loadLoginConfig();
+            loadPasswordConfig();
+            loadRestrictionsConfig();
+            loadMessagesConfig();
+        }
+    }
+
+    private static void loadLoginConfig() {
+        JsonObject login = config.getAsJsonObject("login");
+        JsonObject timeout = login.getAsJsonObject("timeout");
+        loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
+        loginTimeoutSeconds = timeout.get("seconds").getAsInt();
+        
+        JsonObject attempts = login.getAsJsonObject("attempts");
+        maxLoginAttempts = attempts.get("max").getAsInt();
+        loginAttemptTimeoutMinutes = attempts.get("timeout_minutes").getAsInt();
+    }
+
+    private static void loadPasswordConfig() {
+        JsonObject password = config.getAsJsonObject("password");
+        minPasswordLength = password.get("min_length").getAsInt();
+        maxPasswordLength = password.get("max_length").getAsInt();
+        requireSpecialChar = password.get("require_special_char").getAsBoolean();
+        requireNumber = password.get("require_number").getAsBoolean();
+        requireUppercase = password.get("require_uppercase").getAsBoolean();
+        hashAlgorithm = password.get("hash_algorithm").getAsString();
+    }
+
+    private static void loadRestrictionsConfig() {
+        JsonObject restrictions = config.getAsJsonObject("restrictions");
+        preLoginGamemode = restrictions.get("gamemode").getAsString();
+        
+        preLoginEffects = new ArrayList<>();
+        JsonArray effects = restrictions.getAsJsonArray("effects");
+        for (JsonElement effect : effects) {
+            JsonObject effectObj = effect.getAsJsonObject();
+            preLoginEffects.add(new PreLoginEffect(
+                effectObj.get("id").getAsString(),
+                effectObj.get("amplifier").getAsInt(),
+                effectObj.get("particles").getAsBoolean(),
+                effectObj.get("icon").getAsBoolean()
+            ));
+        }
+        
+        allowedCommands.clear();
+        JsonArray commands = restrictions.getAsJsonArray("allowed_commands");
+        for (JsonElement cmd : commands) {
+            allowedCommands.add(cmd.getAsString());
+        }
+    }
+
+    private static void loadMessagesConfig() {
+        JsonObject messages = config.getAsJsonObject("messages");
+        
+        JsonObject title = messages.getAsJsonObject("title");
+        titleEnabled = title.get("enabled").getAsBoolean();
+        loginTitle = title.get("text").getAsString();
+
+        JsonObject subtitle = messages.getAsJsonObject("subtitle");
+        subtitleEnabled = subtitle.get("enabled").getAsBoolean();
+        loginSubtitle = subtitle.get("text").getAsString();
+
+        JsonObject actionbar = messages.getAsJsonObject("actionbar");
+        actionbarEnabled = actionbar.get("enabled").getAsBoolean();
+        actionbarInterval = actionbar.get("interval").getAsInt();
+
+        // 加载其他消息文本
+        JsonObject texts = messages.getAsJsonObject("texts");
+        registerMessage = texts.get("register").getAsString();
+        loginSuccess = texts.get("success").getAsString();
+        loginAlready = texts.get("already").getAsString();
+        loginIncorrect = texts.get("incorrect").getAsString();
+        loginTimeout = texts.get("timeout").getAsString();
+    }
+
+    private static void handleConfigError(String operation, Exception e) {
+        LOGGER.error("Failed to {} config: {}", operation, e.getMessage(), e);
     }
 
     public static void loadTranslations() {
@@ -182,19 +219,12 @@ public class Config {
             Path langFile = langDir.resolve(lang + ".json");
 
             if (Files.exists(langFile)) {
-                try (Reader reader = Files.newBufferedReader(langFile, StandardCharsets.UTF_8)) {
-                    translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
-                    currentLanguage = lang;
-                    LOGGER.info(getLogMessage("lang.loaded"), lang);
-                }
+                loadLanguageFile(langFile, lang);
             } else {
                 loadDefaultLanguage();
             }
-        } catch (IOException e) {
-            LOGGER.error("Failed to load translations: {}", e.getMessage(), e);
-            loadDefaultLanguage();
         } catch (Exception e) {
-            LOGGER.error("Unexpected error loading translations: {}", e.getMessage(), e);
+            handleConfigError("load translations", e);
             loadDefaultLanguage();
         }
     }
@@ -210,8 +240,19 @@ public class Config {
                     }
                 }
             }
-        } catch (IOException e) {
-            LOGGER.error("Failed to copy language file: {}", fileName, e);
+        } catch (IOException | SecurityException e) {
+            handleConfigError("copy language file " + fileName, e);
+        }
+    }
+
+    private static void loadLanguageFile(Path langFile, String lang) {
+        try (Reader reader = Files.newBufferedReader(langFile, StandardCharsets.UTF_8)) {
+            translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
+            currentLanguage = lang;
+            LOGGER.info(getLogMessage("lang.loaded"), lang);
+        } catch (Exception e) {
+            handleConfigError("load language file", e);
+            loadDefaultLanguage();
         }
     }
 
@@ -223,8 +264,8 @@ public class Config {
                     currentLanguage = "en_us";
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error("Failed to load default language file", e);
+        } catch (IOException | JsonParseException e) {
+            handleConfigError("load default language", e);
         }
     }
 
@@ -317,8 +358,8 @@ public class Config {
             try (FileWriter writer = new FileWriter(configPath.toFile())) {
                 new Gson().toJson(configJson, writer);
             }
-        } catch (IOException e) {
-            LOGGER.error("Failed to save first spawn config", e);
+        } catch (IOException | JsonParseException e) {
+            handleConfigError("save first spawn config", e);
         }
     }
 

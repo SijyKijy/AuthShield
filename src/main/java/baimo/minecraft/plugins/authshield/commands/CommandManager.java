@@ -34,7 +34,7 @@ public class CommandManager {
     private void registerRegisterCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> register = Commands.literal("register")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.register"), false);
                 return 1;
             })
             .then(Commands.argument("password", StringArgumentType.word())
@@ -43,7 +43,7 @@ public class CommandManager {
 
         LiteralArgumentBuilder<CommandSourceStack> registerAlias = Commands.literal("reg")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.register"), false);
                 return 1;
             })
             .then(Commands.argument("password", StringArgumentType.word())
@@ -57,7 +57,7 @@ public class CommandManager {
     private void registerLoginCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> login = Commands.literal("login")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.login"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.login"), false);
                 return 1;
             })
             .then(Commands.argument("password", StringArgumentType.word())
@@ -65,7 +65,7 @@ public class CommandManager {
 
         LiteralArgumentBuilder<CommandSourceStack> loginAlias = Commands.literal("l")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.login"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.login"), false);
                 return 1;
             })
             .then(Commands.argument("password", StringArgumentType.word())
@@ -78,7 +78,7 @@ public class CommandManager {
     private void registerChangePasswordCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> changePassword = Commands.literal("changepassword")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.changepassword"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.changepassword"), false);
                 return 1;
             })
             .then(Commands.argument("oldPassword", StringArgumentType.word())
@@ -87,7 +87,7 @@ public class CommandManager {
 
         LiteralArgumentBuilder<CommandSourceStack> changePasswordAlias = Commands.literal("cp")
             .executes(context -> {
-                context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.cp"), false);
+                context.getSource().sendSuccess(() -> Config.getComponent("authshield.usage.cp"), false);
                 return 1;
             })
             .then(Commands.argument("oldPassword", StringArgumentType.word())
@@ -117,10 +117,10 @@ public class CommandManager {
             .executes(context -> {
                 if (Config.reload()) {
                     context.getSource().sendSuccess(() -> 
-                        Config.getMessage("authshield.reload.success"), true);
+                        Config.getComponent("authshield.reload.success"), true);
                 } else {
                     context.getSource().sendFailure(
-                        Config.getMessage("authshield.reload.failed"));
+                        Config.getComponent("authshield.reload.failed"));
                 }
                 return 1;
             }));
@@ -136,7 +136,7 @@ public class CommandManager {
 
         String uuid = player.getUUID().toString();
         if (plugin.getPasswordManager().hasPassword(uuid)) {
-            player.sendSystemMessage(Config.getMessage("authshield.register.exists"));
+            player.sendSystemMessage(Config.getComponent("authshield.register.exists"));
             return 1;
         }
         
@@ -144,7 +144,7 @@ public class CommandManager {
         String confirmPassword = StringArgumentType.getString(context, "confirmPassword");
         
         if (!password.equals(confirmPassword)) {
-            player.sendSystemMessage(Config.getMessage("authshield.register.nomatch"));
+            player.sendSystemMessage(Config.getComponent("authshield.register.nomatch"));
             return 1;
         }
 
@@ -156,7 +156,7 @@ public class CommandManager {
         
         String hashedPassword = plugin.getPasswordManager().hashPassword(password);
         plugin.getPasswordManager().setPassword(uuid, hashedPassword);
-        player.sendSystemMessage(Config.getMessage("authshield.register.success"));
+        player.sendSystemMessage(Config.getComponent("authshield.register.success"));
 
         plugin.getPlayerManager().login(player);
         EffectManager.showLoginSuccessEffect(player);
@@ -174,22 +174,22 @@ public class CommandManager {
         String password = StringArgumentType.getString(context, "password");
         
         if (plugin.getPlayerManager().isLoggedIn(player)) {
-            player.sendSystemMessage(Config.getMessage("authshield.login.already"));
+            player.sendSystemMessage(Config.getComponent("authshield.login.already"));
             return 1;
         }
 
         if (!plugin.getPasswordManager().hasPassword(uuid)) {
-            player.sendSystemMessage(Config.getMessage("authshield.login.not_registered"));
+            player.sendSystemMessage(Config.getComponent("authshield.login.not_registered"));
             return 1;
         }
 
         String storedHash = plugin.getPasswordManager().getPassword(uuid);
         if (plugin.getPasswordManager().verifyPassword(password, storedHash)) {
             plugin.getPlayerManager().login(player);
-            player.sendSystemMessage(Config.getMessage("authshield.login.success"));
+            player.sendSystemMessage(Config.getComponent("authshield.login.success"));
             EffectManager.showLoginSuccessEffect(player);
         } else {
-            player.sendSystemMessage(Config.getMessage("authshield.login.incorrect"));
+            player.sendSystemMessage(Config.getComponent("authshield.login.incorrect"));
         }
         return 1;
     }
@@ -203,7 +203,7 @@ public class CommandManager {
         String uuid = player.getUUID().toString();
 
         if (!plugin.getPlayerManager().isLoggedIn(player)) {
-            player.sendSystemMessage(Config.getMessage("authshield.changepassword.not_logged_in"));
+            player.sendSystemMessage(Config.getComponent("authshield.changepassword.not_logged_in"));
             return 0;
         }
 
@@ -212,12 +212,12 @@ public class CommandManager {
         
         String storedHash = plugin.getPasswordManager().getPassword(uuid);
         if (!plugin.getPasswordManager().verifyPassword(oldPassword, storedHash)) {
-            player.sendSystemMessage(Config.getMessage("authshield.changepassword.incorrect"));
+            player.sendSystemMessage(Config.getComponent("authshield.changepassword.incorrect"));
             return 0;
         }
         
         if (oldPassword.equals(newPassword)) {
-            player.sendSystemMessage(Config.getMessage("authshield.changepassword.same"));
+            player.sendSystemMessage(Config.getComponent("authshield.changepassword.same"));
             return 0;
         }
 
@@ -230,7 +230,7 @@ public class CommandManager {
         String newHashedPassword = plugin.getPasswordManager().hashPassword(newPassword);
         plugin.getPasswordManager().setPassword(uuid, newHashedPassword);
 
-        player.sendSystemMessage(Config.getMessage("authshield.changepassword.success"));
+        player.sendSystemMessage(Config.getComponent("authshield.changepassword.success"));
         EffectManager.showLoginSuccessEffect(player);
         
         return 1;
@@ -239,7 +239,7 @@ public class CommandManager {
     private int unregisterPlayer(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         if (!source.hasPermission(2)) {
-            source.sendFailure(Config.getMessage("authshield.unregister.no_permission"));
+            source.sendFailure(Config.getComponent("authshield.unregister.no_permission"));
             return 0;
         }
 
@@ -251,8 +251,8 @@ public class CommandManager {
             if (plugin.getPasswordManager().hasPassword(uuid)) {
                 plugin.getPasswordManager().removePassword(uuid);
                 plugin.getPlayerManager().logout(targetPlayer);
-                targetPlayer.connection.disconnect(Config.getMessage("authshield.unregister.kick_message"));
-                source.sendSuccess(() -> Config.getMessage("authshield.unregister.success", targetName), true);
+                targetPlayer.connection.disconnect(Config.getComponent("authshield.unregister.kick_message"));
+                source.sendSuccess(() -> Config.getComponent("authshield.unregister.success", targetName), true);
                 return 1;
             }
         } else {
@@ -265,20 +265,20 @@ public class CommandManager {
                     if (plugin.getPasswordManager().hasPassword(uuid)) {
                         plugin.getPasswordManager().removePassword(uuid);
                         source.sendSuccess(() -> 
-                            Config.getMessage("authshield.unregister.success", targetName), true);
+                            Config.getComponent("authshield.unregister.success", targetName), true);
                     }
                 }
             }
         }
 
-        source.sendFailure(Config.getMessage("authshield.unregister.not_found", targetName));
+        source.sendFailure(Config.getComponent("authshield.unregister.not_found", targetName));
         return 0;
     }
     
     private int setFirstSpawn(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         if (!source.hasPermission(2)) {
-            source.sendFailure(Config.getMessage("authshield.setfirstspawn.no_permission"));
+            source.sendFailure(Config.getComponent("authshield.setfirstspawn.no_permission"));
             return 0;
         }
 
@@ -290,7 +290,7 @@ public class CommandManager {
                 player.getZ(),
                 player.serverLevel().dimension().location().toString()
             );
-            source.sendSuccess(() -> Config.getMessage("authshield.setfirstspawn.success"), true);
+            source.sendSuccess(() -> Config.getComponent("authshield.setfirstspawn.success"), true);
             return 1;
         }
         return 0;
@@ -300,17 +300,17 @@ public class CommandManager {
         CommandSourceStack source = context.getSource();
         boolean isOp = source.hasPermission(2);
         
-        source.sendSuccess(() -> Config.getMessage("authshield.help.header"), false);
-        source.sendSuccess(() -> Config.getMessage("authshield.help.register"), false);
-        source.sendSuccess(() -> Config.getMessage("authshield.help.login"), false);
-        source.sendSuccess(() -> Config.getMessage("authshield.help.changepassword"), false);
+        source.sendSuccess(() -> Config.getComponent("authshield.help.header"), false);
+        source.sendSuccess(() -> Config.getComponent("authshield.help.register"), false);
+        source.sendSuccess(() -> Config.getComponent("authshield.help.login"), false);
+        source.sendSuccess(() -> Config.getComponent("authshield.help.changepassword"), false);
         
         if (isOp) {
-            source.sendSuccess(() -> Config.getMessage("authshield.help.admin.unregister"), false);
-            source.sendSuccess(() -> Config.getMessage("authshield.help.admin.setfirstspawn"), false);
+            source.sendSuccess(() -> Config.getComponent("authshield.help.admin.unregister"), false);
+            source.sendSuccess(() -> Config.getComponent("authshield.help.admin.setfirstspawn"), false);
         }
         
-        source.sendSuccess(() -> Config.getMessage("authshield.help.footer"), false);
+        source.sendSuccess(() -> Config.getComponent("authshield.help.footer"), false);
         return 1;
     }
 } 

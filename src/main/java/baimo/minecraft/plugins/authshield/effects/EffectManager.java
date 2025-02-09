@@ -27,11 +27,11 @@ public class EffectManager {
         Component subtitle;
         
         if (AuthShield.getInstance().getPasswordManager().hasPassword(uuid)) {
-            title = Config.getMessage("authshield.title");
-            subtitle = Config.getMessage("authshield.subtitle");
+            title = Config.getComponent("authshield.title");
+            subtitle = Config.getComponent("authshield.subtitle");
         } else {
-            title = Config.getMessage("authshield.title.register");
-            subtitle = Config.getMessage("authshield.subtitle.register");
+            title = Config.getComponent("authshield.title.register");
+            subtitle = Config.getComponent("authshield.subtitle.register");
         }
         
         showPersistentTitle(serverPlayer, title, subtitle);

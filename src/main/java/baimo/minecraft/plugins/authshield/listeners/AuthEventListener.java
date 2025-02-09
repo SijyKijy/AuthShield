@@ -84,11 +84,11 @@ public class AuthEventListener {
                     }
                 }
                 
-                player.sendSystemMessage(Config.getMessage("authshield.register"));
+                player.sendSystemMessage(Config.getComponent("authshield.register"));
                 plugin.getPlayerManager().applyRestrictions(player);
                 plugin.getPlayerManager().startLoginTimer(player);
             } else if (!plugin.getPlayerManager().isLoggedIn(player)) {
-                player.sendSystemMessage(Config.getMessage("authshield.login"));
+                player.sendSystemMessage(Config.getComponent("authshield.login"));
                 plugin.getPlayerManager().applyRestrictions(player);
                 plugin.getPlayerManager().startLoginTimer(player);
             }
@@ -143,7 +143,7 @@ public class AuthEventListener {
                 String command = ev.getParseResults().getReader().getString()
                     .replaceFirst(Pattern.quote("/"), "");
                 if (!Config.isCommandAllowed(command.split(" ")[0])) {
-                    player.sendSystemMessage(Config.getMessage("authshield.command.needlogin"));
+                    player.sendSystemMessage(Config.getComponent("authshield.command.needlogin"));
                     ev.setCanceled(true);
                 }
             }
@@ -175,7 +175,7 @@ public class AuthEventListener {
             ev.setCanceled(true);
             ItemStack itemStack = ev.getEntity().getItem();
             player.getInventory().add(itemStack);
-            player.sendSystemMessage(Config.getMessage("authshield.drop.needlogin"));
+            player.sendSystemMessage(Config.getComponent("authshield.drop.needlogin"));
         }
     }
     
@@ -221,7 +221,7 @@ public class AuthEventListener {
         if (!plugin.getPasswordManager().hasPassword(uuid)) {
             // 如果玩家未注册，不需要提示登录
         } else if (!plugin.getPlayerManager().isLoggedIn(player)) {
-            player.sendSystemMessage(Config.getMessage("authshield.login"));
+            player.sendSystemMessage(Config.getComponent("authshield.login"));
         }
     }
 } 

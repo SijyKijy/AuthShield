@@ -103,12 +103,8 @@ public class Config {
 
             loadConfigFile(configPath);
             
-        } catch (IOException e) {
-            LOGGER.error("Failed to load config: {}", e.getMessage(), e);
-        } catch (JsonParseException e) {
-            LOGGER.error("Failed to parse config JSON: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            LOGGER.error("Unexpected error loading config: {}", e.getMessage(), e);
+        } catch (IOException | JsonParseException | SecurityException e) {
+            handleConfigError("load", e);
         }
     }
 
@@ -126,6 +122,12 @@ public class Config {
     private static void loadConfigFile(Path configPath) throws IOException {
         try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
             config = new Gson().fromJson(reader, JsonObject.class);
+            if (config == null) {
+                LOGGER.error("配置文件为空或格式错误");
+                throw new JsonParseException("配置文件为空或格式错误");
+            }
+            
+            validateConfig();
             LOGGER.info(getLogMessage("config.loaded"), configPath);
             
             loadLoginConfig();
@@ -135,15 +137,46 @@ public class Config {
         }
     }
 
+    private static void validateConfig() {
+        // 检查必要的配置节点
+        if (!config.has("settings")) {
+            LOGGER.error("缺少 settings 配置节点");
+            throw new JsonParseException("缺少 settings 配置节点");
+        }
+        if (!config.has("login")) {
+            LOGGER.error("缺少 login 配置节点");
+            throw new JsonParseException("缺少 login 配置节点");
+        }
+        if (!config.has("password")) {
+            LOGGER.error("缺少 password 配置节点");
+            throw new JsonParseException("缺少 password 配置节点");
+        }
+        if (!config.has("restrictions")) {
+            LOGGER.error("缺少 restrictions 配置节点");
+            throw new JsonParseException("缺少 restrictions 配置节点");
+        }
+        if (!config.has("messages")) {
+            LOGGER.error("缺少 messages 配置节点");
+            throw new JsonParseException("缺少 messages 配置节点");
+        }
+    }
+
     private static void loadLoginConfig() {
-        JsonObject login = config.getAsJsonObject("login");
-        JsonObject timeout = login.getAsJsonObject("timeout");
-        loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
-        loginTimeoutSeconds = timeout.get("seconds").getAsInt();
-        
-        JsonObject attempts = login.getAsJsonObject("attempts");
-        maxLoginAttempts = attempts.get("max").getAsInt();
-        loginAttemptTimeoutMinutes = attempts.get("timeout_minutes").getAsInt();
+        try {
+            JsonObject login = config.getAsJsonObject("login");
+            JsonObject timeout = login.getAsJsonObject("timeout");
+            loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
+            loginTimeoutSeconds = timeout.get("seconds").getAsInt();
+            
+            JsonObject attempts = login.getAsJsonObject("attempts");
+            maxLoginAttempts = attempts.get("max").getAsInt();
+            loginAttemptTimeoutMinutes = attempts.get("timeout_minutes").getAsInt();
+            
+            LOGGER.debug("登录配置加载完成: timeout={}, attempts={}", loginTimeoutSeconds, maxLoginAttempts);
+        } catch (Exception e) {
+            LOGGER.error("加载登录配置失败: {}", e.getMessage());
+            throw new JsonParseException("加载登录配置失败", e);
+        }
     }
 
     private static void loadPasswordConfig() {
@@ -180,27 +213,50 @@ public class Config {
     }
 
     private static void loadMessagesConfig() {
-        JsonObject messages = config.getAsJsonObject("messages");
-        
-        JsonObject title = messages.getAsJsonObject("title");
-        titleEnabled = title.get("enabled").getAsBoolean();
-        loginTitle = title.get("text").getAsString();
+        try {
+            JsonObject messages = config.getAsJsonObject("messages");
+            
+            JsonObject title = messages.getAsJsonObject("title");
+            titleEnabled = title.get("enabled").getAsBoolean();
+            loginTitle = title.get("text").getAsString();
 
-        JsonObject subtitle = messages.getAsJsonObject("subtitle");
-        subtitleEnabled = subtitle.get("enabled").getAsBoolean();
-        loginSubtitle = subtitle.get("text").getAsString();
+            JsonObject subtitle = messages.getAsJsonObject("subtitle");
+            subtitleEnabled = subtitle.get("enabled").getAsBoolean();
+            loginSubtitle = subtitle.get("text").getAsString();
 
-        JsonObject actionbar = messages.getAsJsonObject("actionbar");
-        actionbarEnabled = actionbar.get("enabled").getAsBoolean();
-        actionbarInterval = actionbar.get("interval").getAsInt();
+            JsonObject actionbar = messages.getAsJsonObject("actionbar");
+            actionbarEnabled = actionbar.get("enabled").getAsBoolean();
+            actionbarInterval = actionbar.get("interval").getAsInt();
 
-        // 加载其他消息文本
-        JsonObject texts = messages.getAsJsonObject("texts");
-        registerMessage = texts.get("register").getAsString();
-        loginSuccess = texts.get("success").getAsString();
-        loginAlready = texts.get("already").getAsString();
-        loginIncorrect = texts.get("incorrect").getAsString();
-        loginTimeout = texts.get("timeout").getAsString();
+            // 设置默认消息文本
+            registerMessage = "authshield.register";
+            loginSuccess = "authshield.login.success";
+            loginAlready = "authshield.login.already";
+            loginIncorrect = "authshield.login.incorrect";
+            loginTimeout = "authshield.login.timeout";
+
+            // 尝试从配置文件加载自定义消息文本
+            JsonObject texts = messages.has("texts") ? messages.getAsJsonObject("texts") : null;
+            if (texts != null) {
+                registerMessage = getTextOrDefault(texts, "register", registerMessage);
+                loginSuccess = getTextOrDefault(texts, "success", loginSuccess);
+                loginAlready = getTextOrDefault(texts, "already", loginAlready);
+                loginIncorrect = getTextOrDefault(texts, "incorrect", loginIncorrect);
+                loginTimeout = getTextOrDefault(texts, "timeout", loginTimeout);
+            }
+            
+            LOGGER.debug("消息配置加载完成");
+        } catch (Exception e) {
+            LOGGER.error("加载消息配置失败: {}", e.getMessage());
+            throw new JsonParseException("加载消息配置失败", e);
+        }
+    }
+
+    private static String getTextOrDefault(JsonObject texts, String key, String defaultValue) {
+        if (texts == null || !texts.has(key) || texts.get(key).isJsonNull()) {
+            return defaultValue;
+        }
+        return texts.get(key).getAsString();
     }
 
     private static void handleConfigError(String operation, Exception e) {
@@ -212,19 +268,24 @@ public class Config {
             Path langDir = Path.of("config/authshield/lang");
             Files.createDirectories(langDir);
 
+            // 复制默认语言文件
             copyLanguageFile(langDir, "en_us.json");
             copyLanguageFile(langDir, "zh_cn.json");
 
+            // 获取配置中的语言设置
             String lang = config.getAsJsonObject("settings").get("language").getAsString();
-            Path langFile = langDir.resolve(lang + ".json");
+            LOGGER.info("正在加载语言: {}", lang);
 
+            Path langFile = langDir.resolve(lang + ".json");
             if (Files.exists(langFile)) {
                 loadLanguageFile(langFile, lang);
+                LOGGER.info("成功加载语言文件: {}", lang);
             } else {
+                LOGGER.warn("找不到语言文件 {}，使用默认语言 en_us", lang);
                 loadDefaultLanguage();
             }
         } catch (Exception e) {
-            handleConfigError("load translations", e);
+            LOGGER.error("加载翻译文件失败: {}", e.getMessage());
             loadDefaultLanguage();
         }
     }
@@ -236,69 +297,161 @@ public class Config {
                 try (InputStream in = Config.class.getResourceAsStream("/assets/authshield/lang/" + fileName)) {
                     if (in != null) {
                         Files.copy(in, langFile);
-                        LOGGER.info(getLogMessage("lang.created"), langFile);
+                        LOGGER.info("已创建语言文件: {}", langFile);
+                    } else {
+                        LOGGER.error("无法找到内置语言文件: {}", fileName);
                     }
                 }
             }
         } catch (IOException | SecurityException e) {
-            handleConfigError("copy language file " + fileName, e);
+            LOGGER.error("复制语言文件 {} 失败: {}", fileName, e.getMessage());
         }
     }
 
     private static void loadLanguageFile(Path langFile, String lang) {
         try (Reader reader = Files.newBufferedReader(langFile, StandardCharsets.UTF_8)) {
-            translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
+            Map<String, String> langMap = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
+            if (langMap == null || langMap.isEmpty()) {
+                LOGGER.error("语言文件 {} 为空或格式错误", lang);
+                loadDefaultLanguage();
+                return;
+            }
+
+            // 验证必要的语言键
+            List<String> missingKeys = validateLanguageKeys(langMap);
+            if (!missingKeys.isEmpty()) {
+                LOGGER.warn("语言文件 {} 缺少以下键: {}", lang, String.join(", ", missingKeys));
+            }
+
+            translations = langMap;
             currentLanguage = lang;
-            LOGGER.info(getLogMessage("lang.loaded"), lang);
+            LOGGER.info("已加载语言: {}", lang);
         } catch (Exception e) {
-            handleConfigError("load language file", e);
+            LOGGER.error("加载语言文件 {} 失败: {}", lang, e.getMessage());
             loadDefaultLanguage();
         }
     }
 
+    private static List<String> validateLanguageKeys(Map<String, String> langMap) {
+        List<String> requiredKeys = List.of(
+            "authshield.title",
+            "authshield.subtitle",
+            "authshield.register",
+            "authshield.login",
+            "authshield.login.success",
+            "authshield.login.incorrect",
+            "authshield.login.timeout"
+        );
+
+        List<String> missingKeys = new ArrayList<>();
+        for (String key : requiredKeys) {
+            if (!langMap.containsKey(key)) {
+                missingKeys.add(key);
+            }
+        }
+        return missingKeys;
+    }
+
     private static void loadDefaultLanguage() {
-        try (InputStream in = Config.class.getResourceAsStream("/assets/authshield/lang/en_us.json")) {
-            if (in != null) {
-                try (InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+        try {
+            try (InputStream in = Config.class.getResourceAsStream("/assets/authshield/lang/en_us.json")) {
+                if (in != null) {
+                    Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
                     translations = new Gson().fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
                     currentLanguage = "en_us";
+                    LOGGER.info("已加载默认语言: en_us");
+                } else {
+                    LOGGER.error("找不到默认语言文件");
+                    translations = new HashMap<>();
                 }
             }
-        } catch (IOException | JsonParseException e) {
-            handleConfigError("load default language", e);
+        } catch (Exception e) {
+            LOGGER.error("加载默认语言失败: {}", e.getMessage());
+            translations = new HashMap<>();
         }
     }
 
-    public static Component getMessage(String key) {
-        String text = translations.getOrDefault(key, key);
-        LOGGER.debug("Getting message for key: {}, text: {}", key, text);
-        return Component.literal(text);
+    public static String getMessage(String key, Object... args) {
+        String message = translations.getOrDefault(key, key);
+        try {
+            return String.format(message, args);
+        } catch (Exception e) {
+            LOGGER.error("格式化消息失败 [{}]: {}", key, e.getMessage());
+            return message;
+        }
     }
 
-    public static Component getMessage(String key, Object... args) {
-        String text = translations.getOrDefault(key, key);
-        return Component.literal(String.format(text, args));
+    public static Component getComponent(String key, Object... args) {
+        return Component.literal(getMessage(key, args));
     }
+
+    private static void saveConfig() {
+        try {
+            Path configPath = Path.of("config/authshield/config.json");
+            try (FileWriter writer = new FileWriter(configPath.toFile(), StandardCharsets.UTF_8)) {
+                new Gson().toJson(config, writer);
+                LOGGER.info("配置已保存到: {}", configPath);
+            }
+        } catch (Exception e) {
+            LOGGER.error("保存配置失败: {}", e.getMessage());
+        }
+    }
+
+    public static boolean reload() {
+        try {
+            loadConfig();
+            loadTranslations();
+            LOGGER.info("配置已重新加载");
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("重新加载配置失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public static String getLogMessage(String key) {
+        return translations.getOrDefault("authshield.log." + key, key);
+    }
+
+    // Getters for configuration values
+    public static boolean isLoginTimeoutEnabled() { return loginTimeoutEnabled; }
+    public static int getLoginTimeoutSeconds() { return loginTimeoutSeconds; }
+    public static int getMaxLoginAttempts() { return maxLoginAttempts; }
+    public static int getLoginAttemptTimeoutMinutes() { return loginAttemptTimeoutMinutes; }
+    public static int getMinPasswordLength() { return minPasswordLength; }
+    public static int getMaxPasswordLength() { return maxPasswordLength; }
+    public static boolean isRequireSpecialChar() { return requireSpecialChar; }
+    public static boolean isRequireNumber() { return requireNumber; }
+    public static boolean isRequireUppercase() { return requireUppercase; }
+    public static String getHashAlgorithm() { return hashAlgorithm; }
+    public static String getPreLoginGamemode() { return preLoginGamemode; }
+    public static List<PreLoginEffect> getPreLoginEffects() { return new ArrayList<>(preLoginEffects); }
+    public static Set<String> getAllowedCommands() { return new HashSet<>(allowedCommands); }
+    public static boolean isTitleEnabled() { return titleEnabled; }
+    public static boolean isSubtitleEnabled() { return subtitleEnabled; }
+    public static boolean isActionbarEnabled() { return actionbarEnabled; }
+    public static int getActionbarInterval() { return actionbarInterval; }
+    public static String getCurrentLanguage() { return currentLanguage; }
 
     public static boolean validatePassword(String password, Component[] error) {
         if (password.length() < minPasswordLength) {
-            error[0] = getMessage("authshield.register.password.tooshort", minPasswordLength);
+            error[0] = getComponent("authshield.register.password.tooshort", minPasswordLength);
             return false;
         }
         if (password.length() > maxPasswordLength) {
-            error[0] = getMessage("authshield.register.password.toolong", maxPasswordLength);
+            error[0] = getComponent("authshield.register.password.toolong", maxPasswordLength);
             return false;
         }
         if (requireSpecialChar && !SPECIAL_CHARS.matcher(password).find()) {
-            error[0] = getMessage("authshield.register.password.needsymbol");
+            error[0] = getComponent("authshield.register.password.needsymbol");
             return false;
         }
         if (requireNumber && !NUMBERS.matcher(password).find()) {
-            error[0] = getMessage("authshield.register.password.neednumber");
+            error[0] = getComponent("authshield.register.password.neednumber");
             return false;
         }
         if (requireUppercase && !UPPERCASE.matcher(password).find()) {
-            error[0] = getMessage("authshield.register.password.needupper");
+            error[0] = getComponent("authshield.register.password.needupper");
             return false;
         }
         return true;
@@ -371,115 +524,6 @@ public class Config {
     public static double getFirstSpawnY() { return firstSpawnY; }
     public static double getFirstSpawnZ() { return firstSpawnZ; }
     public static String getFirstSpawnWorld() { return firstSpawnWorld; }
-
-
-    public static String getLogMessage(String key) {
-        if (currentLanguage.equals("zh_cn")) {
-            return switch (key) {
-                case "config.created" -> "已创建默认配置文件: {}";
-                case "config.not_found" -> "在资源文件中找不到默认配置文件 config.json";
-                case "config.loaded" -> "已从 {} 加载配置";
-                case "mod.initialized" -> "AuthShield 安全系统已加载";
-                case "password.loaded" -> "AuthShield 密码数据已加载";
-                case "password.load_failed" -> "密码数据加载失败";
-                case "lang.created" -> "已创建语言文件: {}";
-                case "lang.loaded" -> "已加载语言文件: {}";
-                default -> key;
-            };
-        } else {
-            return switch (key) {
-                case "config.created" -> "Created default config file: {}";
-                case "config.not_found" -> "Default config.json not found in resources";
-                case "config.loaded" -> "Loaded config from {}";
-                case "mod.initialized" -> "AuthShield security system loaded";
-                case "password.loaded" -> "AuthShield password data loaded";
-                case "password.load_failed" -> "Failed to load password data";
-                case "lang.created" -> "Created language file: {}";
-                case "lang.loaded" -> "Loaded language file: {}";
-                default -> key;
-            };
-        }
-    }
-
-    public static String getCurrentLanguage() {
-        return currentLanguage;
-    }
-
-
-    public static boolean reload() {
-        try {
-            loadTranslations();
-            return true;
-        } catch (Exception e) {
-            LOGGER.error("Failed to reload configuration", e);
-            return false;
-        }
-    }
-
-
-    public static int getLoginTimeoutSeconds() {
-        return loginTimeoutSeconds;
-    }
-
-    public static boolean isLoginTimeoutEnabled() {
-        return loginTimeoutEnabled;
-    }
-
-    public static int getMaxLoginAttempts() {
-        return maxLoginAttempts;
-    }
-
-    public static int getLoginAttemptTimeoutMinutes() {
-        return loginAttemptTimeoutMinutes;
-    }
-
-    public static int getMinPasswordLength() {
-        return minPasswordLength;
-    }
-
-    public static int getMaxPasswordLength() {
-        return maxPasswordLength;
-    }
-
-    public static boolean isRequireSpecialChar() {
-        return requireSpecialChar;
-    }
-
-    public static boolean isRequireNumber() {
-        return requireNumber;
-    }
-
-    public static boolean isRequireUppercase() {
-        return requireUppercase;
-    }
-
-    public static String getHashAlgorithm() {
-        return hashAlgorithm;
-    }
-
-    public static String getPreLoginGamemode() {
-        return preLoginGamemode;
-    }
-
-    public static List<PreLoginEffect> getPreLoginEffects() {
-        return preLoginEffects;
-    }
-
-    public static boolean isTitleEnabled() {
-        return titleEnabled;
-    }
-
-    public static boolean isSubtitleEnabled() {
-        return subtitleEnabled;
-    }
-
-    public static boolean isActionbarEnabled() {
-        return actionbarEnabled;
-    }
-
-    public static int getActionbarInterval() {
-        return actionbarInterval;
-    }
 
     public static String getLoginTitle() {
         return loginTitle;

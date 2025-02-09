@@ -53,6 +53,13 @@
       "enabled": true,
       "interval": 40,
       "text": "authshield.actionbar"
+    },
+    "texts": {
+      "register": "authshield.register",
+      "success": "authshield.login.success",
+      "already": "authshield.login.already",
+      "incorrect": "authshield.login.incorrect",
+      "timeout": "authshield.login.timeout"
     }
   }
 } 

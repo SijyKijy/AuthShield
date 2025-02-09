@@ -46,7 +46,7 @@ public class PlayerManager {
             public void run() {
                 if (!isLoggedIn(player)) {
                     ((ServerPlayer)player).connection.disconnect(
-                        Config.getMessage("authshield.login.timeout", 
+                        Config.getComponent("authshield.login.timeout", 
                             Config.getLoginTimeoutSeconds()));
                     loginTasks.remove(uuid);
                 }

@@ -14,6 +14,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 @Mod(value = AuthShield.MODID)
 public class AuthShield {
@@ -35,9 +36,14 @@ public class AuthShield {
         instance = this;
         
         try {
+            // 注册事件监听器
+            modEventBus.register(Config.class);
+            NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+            
             // 初始化配置
             Config.loadConfig();
             Config.loadTranslations();
+            LOGGER.info("当前语言: " + Config.getCurrentLanguage());
             
             // 初始化各个管理器
             this.passwordManager = new PasswordManager();
@@ -47,7 +53,6 @@ public class AuthShield {
             
             // 注册事件监听器
             NeoForge.EVENT_BUS.register(eventListener);
-            modEventBus.register(Config.class);
             
             // 显示欢迎信息
             LOGGER.info("");
@@ -70,6 +75,13 @@ public class AuthShield {
         } catch (Exception e) {
             LOGGER.error(Config.getLogMessage("mod.init_failed"), e);
         }
+    }
+
+    private void onServerStarting(ServerStartingEvent event) {
+        // 重新加载配置确保语言设置正确
+        Config.reload();
+        // 注册命令
+        commandManager.registerCommands(event.getServer().getCommands().getDispatcher());
     }
 
     public static AuthShield getInstance() {

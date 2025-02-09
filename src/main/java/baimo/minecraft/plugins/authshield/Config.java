@@ -24,12 +24,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.mojang.logging.LogUtils;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -37,20 +33,13 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 @EventBusSubscriber(modid = "authshield", bus = EventBusSubscriber.Bus.MOD)
 public class Config {
-    public static void main(String[] args) {
-        // 主方法，用于满足隐式声明类的要求
-    }
-
+    private static final Logger LOGGER = LogManager.getLogger("authshield");
     private static final Pattern SPECIAL_CHARS = Pattern.compile("[!@#$%^&*(),.?\":{}|<>]");
     private static final Pattern NUMBERS = Pattern.compile("\\d");
     private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
-    private static final Gson gson = new Gson();
-    private static final Logger LOGGER = LogManager.getLogger("authshield");
     private static JsonObject config;
     private static Map<String, String> translations = new HashMap<>();
     private static String currentLanguage = "en_us"; 
-
-    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     // 登录相关配置
     private static boolean loginTimeoutEnabled;
@@ -69,15 +58,13 @@ public class Config {
     // 游戏限制配置
     private static String preLoginGamemode;
     private static List<PreLoginEffect> preLoginEffects;
-    private static Set<String> allowedCommands = new HashSet<>();
+    private static final Set<String> allowedCommands = new HashSet<>();
 
     // 消息显示配置
     private static boolean titleEnabled;
     private static boolean subtitleEnabled;
     private static boolean actionbarEnabled;
     private static int actionbarInterval;
-
-    static final ModConfigSpec SPEC = BUILDER.build();
 
     public static final String MODID = "authshield";
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
@@ -176,11 +163,13 @@ public class Config {
             actionbarEnabled = actionbar.get("enabled").getAsBoolean();
             actionbarInterval = actionbar.get("interval").getAsInt();
             
+        } catch (IOException e) {
+            LOGGER.error("Failed to load config: {}", e.getMessage(), e);
         } catch (Exception e) {
-            LOGGER.error("Failed to load config", e);
+            LOGGER.error("Unexpected error loading config: {}", e.getMessage(), e);
         }
     }
-    
+
     public static void loadTranslations() {
         try {
             Path langDir = Path.of("config/authshield/lang");
@@ -201,8 +190,11 @@ public class Config {
             } else {
                 loadDefaultLanguage();
             }
+        } catch (IOException e) {
+            LOGGER.error("Failed to load translations: {}", e.getMessage(), e);
+            loadDefaultLanguage();
         } catch (Exception e) {
-            LOGGER.error("Failed to load translations", e);
+            LOGGER.error("Unexpected error loading translations: {}", e.getMessage(), e);
             loadDefaultLanguage();
         }
     }
@@ -295,17 +287,6 @@ public class Config {
         return config;
     }
 
-    private static boolean validateItemName(final Object obj) {
-        if (obj instanceof String itemName) {
-            try {
-                return BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(itemName));
-            } catch (Exception e) {
-                return false;
-            }
-        }
-        return false;
-    }
-
     public static void setFirstSpawn(double x, double y, double z, String world) {
         firstSpawnX = x;
         firstSpawnY = y;
@@ -386,7 +367,6 @@ public class Config {
 
     public static boolean reload() {
         try {
-            loadConfig();
             loadTranslations();
             return true;
         } catch (Exception e) {

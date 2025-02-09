@@ -26,7 +26,6 @@ import baimo.minecraft.plugins.authshield.Config;
 public class PasswordManager {
     private static final Logger LOGGER = LogManager.getLogger("authshield");
     private static final Gson gson = new Gson();
-    private static final String PASSWORD_FILE = "playerdata.json";
     private static final int ITERATIONS = 65536;
     private static final int KEY_LENGTH = 256;
     private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
@@ -35,10 +34,10 @@ public class PasswordManager {
     private final Map<String, String> passwords = new HashMap<>();
     
     public PasswordManager() {
-        loadPasswords();
+        doInitialLoad();
     }
     
-    public void loadPasswords() {
+    private final void doInitialLoad() {
         try {
             Path path = Path.of("config/authshield/playerdata.json");
             if (Files.exists(path)) {
@@ -53,6 +52,10 @@ public class PasswordManager {
         } catch (IOException e) {
             LOGGER.error(Config.getLogMessage("password.load.failed"), e);
         }
+    }
+    
+    public void loadPasswords() {
+        doInitialLoad();
     }
     
     public void savePasswords() {

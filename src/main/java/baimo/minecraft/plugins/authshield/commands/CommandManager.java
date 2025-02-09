@@ -257,16 +257,18 @@ public class CommandManager {
             }
         } else {
             // 尝试从缓存中查找离线玩家
-            source.getServer().getProfileCache()
-                .get(targetName)
-                .ifPresent(profile -> {
-                    String uuid = profile.getId().toString();
-                    if (plugin.getPasswordManager().hasPassword(uuid)) {
-                        plugin.getPasswordManager().removePassword(uuid);
-                        source.sendSuccess(() -> 
-                            Config.getMessage("authshield.unregister.success", targetName), true);
-                    }
-                });
+            var profileCache = source.getServer().getProfileCache();
+            if (profileCache != null) {
+                profileCache.get(targetName)
+                    .ifPresent(profile -> {
+                        String uuid = profile.getId().toString();
+                        if (plugin.getPasswordManager().hasPassword(uuid)) {
+                            plugin.getPasswordManager().removePassword(uuid);
+                            source.sendSuccess(() -> 
+                                Config.getMessage("authshield.unregister.success", targetName), true);
+                        }
+                    });
+            }
         }
 
         source.sendFailure(Config.getMessage("authshield.unregister.not_found", targetName));

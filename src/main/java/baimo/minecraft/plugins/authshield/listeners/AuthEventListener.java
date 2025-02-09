@@ -1,7 +1,12 @@
 package baimo.minecraft.plugins.authshield.listeners;
 
+import java.util.regex.Pattern;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import baimo.minecraft.plugins.authshield.AuthShield;
+import baimo.minecraft.plugins.authshield.Config;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -25,11 +30,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-
-import java.util.regex.Pattern;
-
-import baimo.minecraft.plugins.authshield.AuthShield;
-import baimo.minecraft.plugins.authshield.Config;
 
 public class AuthEventListener {
     private static final Logger LOGGER = LogManager.getLogger("authshield");
@@ -56,26 +56,31 @@ public class AuthEventListener {
             
             if (!plugin.getPasswordManager().hasPassword(uuid)) {
                 if (Config.isFirstSpawnSet()) {
-                    ResourceKey<Level> targetDim = ResourceKey.create(Registries.DIMENSION, 
-                        ResourceLocation.tryParse(Config.getFirstSpawnWorld()));
-                    
-                    if (player.serverLevel().dimension() != targetDim) {
-                        ServerLevel targetLevel = player.server.getLevel(targetDim);
-                        if (targetLevel != null) {
-                            player.teleportTo(targetLevel,
-                                Config.getFirstSpawnX(),
-                                Config.getFirstSpawnY(),
-                                Config.getFirstSpawnZ(),
-                                player.getYRot(),
-                                player.getXRot()
-                            );
+                    String worldId = Config.getFirstSpawnWorld();
+                    if (worldId != null) {
+                        ResourceLocation worldLocation = ResourceLocation.tryParse(worldId);
+                        if (worldLocation != null) {
+                            ResourceKey<Level> targetDim = ResourceKey.create(Registries.DIMENSION, worldLocation);
+                            
+                            if (player.serverLevel().dimension() != targetDim) {
+                                ServerLevel targetLevel = player.server.getLevel(targetDim);
+                                if (targetLevel != null) {
+                                    player.teleportTo(targetLevel,
+                                        Config.getFirstSpawnX(),
+                                        Config.getFirstSpawnY(),
+                                        Config.getFirstSpawnZ(),
+                                        player.getYRot(),
+                                        player.getXRot()
+                                    );
+                                }
+                            } else {
+                                player.teleportTo(
+                                    Config.getFirstSpawnX(),
+                                    Config.getFirstSpawnY(),
+                                    Config.getFirstSpawnZ()
+                                );
+                            }
                         }
-                    } else {
-                        player.teleportTo(
-                            Config.getFirstSpawnX(),
-                            Config.getFirstSpawnY(),
-                            Config.getFirstSpawnZ()
-                        );
                     }
                 }
                 
@@ -214,7 +219,7 @@ public class AuthEventListener {
     private void promptLogin(Player player) {
         String uuid = player.getUUID().toString();
         if (!plugin.getPasswordManager().hasPassword(uuid)) {
-            return;
+            // 如果玩家未注册，不需要提示登录
         } else if (!plugin.getPlayerManager().isLoggedIn(player)) {
             player.sendSystemMessage(Config.getMessage("authshield.login"));
         }

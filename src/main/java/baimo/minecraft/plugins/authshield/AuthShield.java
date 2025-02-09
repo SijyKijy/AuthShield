@@ -322,7 +322,6 @@ public class AuthShield {
                 .then(Commands.argument("newPassword", StringArgumentType.word())
                     .executes(AuthShield::changePassword)));
 
-        // 添加帮助命令
         LiteralArgumentBuilder<CommandSourceStack> help = Commands.literal("authshield")
             .executes(context -> {
                 CommandSourceStack source = context.getSource();

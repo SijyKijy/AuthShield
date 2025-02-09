@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://github.com/xmk2333/AuthShield/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+# updateJSONURL="https://change.me.example.invalid/updates.json"
+# displayURL="https://change.me.to.your.mods.homepage.example.invalid/"
+logoFile="assets/authshield/textures/icon.png"
+credits="感谢所有为本项目提供支持和反馈的用户！"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+[[dependencies.authshield]]
+modId="neoforge"
+type="required"
+versionRange="${neo_version_range}"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.authshield]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="SERVER" 

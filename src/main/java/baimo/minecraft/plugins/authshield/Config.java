@@ -76,7 +76,7 @@ public class Config {
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static final String MODID = "authshield";
-    public static final String PASSWORD_FILE = "passwords.json";
+    public static final String PASSWORD_FILE = "playerdata.json";
     public static final long LOGIN_TIMEOUT_MILLIS = 60000L;
 
     // 消息文本配置

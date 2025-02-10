@@ -2,24 +2,19 @@ package baimo.minecraft.plugins.authshield;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.commands.CommandSourceStack;
 
-import baimo.minecraft.plugins.authshield.security.PasswordManager;
 import baimo.minecraft.plugins.authshield.commands.CommandManager;
 import baimo.minecraft.plugins.authshield.listeners.AuthEventListener;
 import baimo.minecraft.plugins.authshield.player.PlayerManager;
-import baimo.minecraft.plugins.authshield.util.PerformanceUtils;
+import baimo.minecraft.plugins.authshield.security.PasswordManager;
+import net.minecraft.ChatFormatting;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 @Mod(value = AuthShield.MODID)
 public class AuthShield {
@@ -53,17 +48,25 @@ public class AuthShield {
             
             // 注册事件监听器
             NeoForge.EVENT_BUS.register(eventListener);
-            NeoForge.EVENT_BUS.register(this);
             modEventBus.register(Config.class);
+            NeoForge.EVENT_BUS.addListener((ServerStartingEvent event) -> {
+                this.commandManager.registerCommands(event.getServer().getCommands().getDispatcher());
+            });
             
             // 显示欢迎信息
             LOGGER.info("");
-            LOGGER.info("[ AuthShield ]");
+            LOGGER.info(ChatFormatting.GRAY + "[ " + 
+                       ChatFormatting.LIGHT_PURPLE + "AuthShield" + 
+                       ChatFormatting.GRAY + " ]");
                        
             if (Config.getCurrentLanguage().equals("zh_cn")) {
-                LOGGER.info("感谢使用千屈的登录验证插件");
-                LOGGER.info("欢迎加入开发者群 QQ群: 528651839");
-                LOGGER.info("获取更多资讯与技术支持");
+                LOGGER.info(ChatFormatting.WHITE + "感谢使用 " + 
+                           ChatFormatting.LIGHT_PURPLE + "千屈" +
+                           ChatFormatting.WHITE + " 的登录验证插件");
+                LOGGER.info(ChatFormatting.WHITE + "欢迎加入开发者群 " +
+                           ChatFormatting.AQUA + "QQ群: " + 
+                           ChatFormatting.YELLOW + "528651839");
+                LOGGER.info(ChatFormatting.WHITE + "获取更多资讯与技术支持");
             }
             
             LOGGER.info("");
@@ -95,29 +98,5 @@ public class AuthShield {
 
     public static Logger getLogger() {
         return LOGGER;
-    }
-
-    @net.neoforged.bus.api.SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        commandManager.registerCommands(event.getServer().getCommands().getDispatcher());
-    }
-    
-    // 在服务器关闭时清理资源
-    @net.neoforged.bus.api.SubscribeEvent
-    public void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
-        LOGGER.info("Shutting down AuthShield...");
-        try {
-            // 关闭密码管理器
-            if (passwordManager != null) {
-                passwordManager.shutdown();
-            }
-            
-            // 关闭线程池
-            PerformanceUtils.shutdownExecutors();
-            
-            LOGGER.info("AuthShield shutdown completed successfully");
-        } catch (Exception e) {
-            LOGGER.error("Error during AuthShield shutdown: {}", e.getMessage());
-        }
     }
 }

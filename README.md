@@ -81,7 +81,12 @@ AuthShield 是一个专为 Minecraft NeoForge 服务器设计的登录验证插�
     "require_special_char": false,  // 是否需要特殊字符
     "require_number": false,        // 是否需要数字
     "require_uppercase": false,     // 是否需要大写字母
-    "hash_algorithm": "SHA-256"     // 密码加密算法
+    "hash": {
+        "algorithm": "PBKDF2WithHmacSHA256",  // 密码加密算法
+        "iterations": 65536,                   // 哈希迭代次数
+        "key_length": 256,                    // 密钥长度（位）
+        "salt_length": 16                     // 盐值长度（字节）
+    }
 }
 ```
 

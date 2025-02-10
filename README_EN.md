@@ -81,79 +81,14 @@ The plugin will automatically create configuration files on first run:
     "require_special_char": false,  // Require special characters
     "require_number": false,        // Require numbers
     "require_uppercase": false,     // Require uppercase letters
-    "hash_algorithm": "SHA-256"     // Password encryption algorithm
-}
-```
-
-#### 🛡️ Restrictions
-```json
-"restrictions": {
-    "gamemode": "spectator",    // Gamemode before login
-    "effects": [                // Effects applied before login
-        {
-            "id": "minecraft:slow_falling",
-            "amplifier": 255,
-            "particles": false,
-            "icon": false
-        }
-    ],
-    "allowed_commands": [       // Allowed commands before login
-        "login", "l", "register", "reg"
-    ]
-}
-```
-
-#### 💬 Message Settings
-```json
-"messages": {
-    "title": {
-        "enabled": true,    // Enable title
-        "fade_in": 10,      // Fade in duration
-        "stay": 70,         // Stay duration
-        "fade_out": 20,     // Fade out duration
-        "text": "..."       // Title text
-    },
-    "subtitle": {
-        "enabled": true,    // Enable subtitle
-        "text": "..."       // Subtitle text
-    },
-    "actionbar": {
-        "enabled": true,    // Enable actionbar messages
-        "interval": 40,     // Message display interval
-        "text": "..."       // Message text
+    "hash": {
+        "algorithm": "PBKDF2WithHmacSHA256",  // Password encryption algorithm
+        "iterations": 65536,                   // Hash iteration count
+        "key_length": 256,                    // Key length (bits)
+        "salt_length": 16                     // Salt length (bytes)
     }
 }
 ```
 
-## 📌 Commands
-
-### Player Commands
-| Command | Shortcut | Description |
-|---------|----------|-------------|
-| `/register <password> <confirmPassword>` | `/reg` | Register account |
-| `/login <password>` | `/l` | Login account |
-| `/changepassword <oldPassword> <newPassword>` | `/cp` | Change password |
-
-### Admin Commands
-| Command | Description |
-|---------|-------------|
-| `/authshield help` | Display help information |
-| `/authshield unregister <player>` | Unregister specified player |
-| `/authshield setfirstspawn` | Set initial spawn point for new players |
-
-## 🔧 Requirements
-
-- ☕ Java 17+
-- 🎮 Minecraft 1.21.1
-- 🛠️ NeoForge Server
-
-## 💬 Support
-
-Need help? We're here for you!
-
-[![Join our QQ Group](https://img.shields.io/badge/QQ_Group-528651839-blue)](https://jq.qq.com/?_wv=1027&k=528651839)
-
-## 📜 License
-
-This project is licensed under the [MIT](LICENSE) License.
-
+#### 🛡️ Restrictions
+```

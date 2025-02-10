@@ -1,23 +1,19 @@
 package baimo.minecraft.plugins.authshield.commands;
 
-import java.util.UUID;
-
-import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 
+import baimo.minecraft.plugins.authshield.AuthShield;
+import baimo.minecraft.plugins.authshield.Config;
+import baimo.minecraft.plugins.authshield.effects.EffectManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-
-import baimo.minecraft.plugins.authshield.AuthShield;
-import baimo.minecraft.plugins.authshield.Config;
-import baimo.minecraft.plugins.authshield.effects.EffectManager;
 
 public class CommandManager {
     private final AuthShield plugin;
@@ -27,30 +23,16 @@ public class CommandManager {
     }
     
     public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
-        // 记录注册前的命令数量
-        int beforeCount = dispatcher.getRoot().getChildren().size();
-        
         // 注册命令
         registerRegisterCommand(dispatcher);
         registerLoginCommand(dispatcher);
         registerChangePasswordCommand(dispatcher);
         registerAdminCommands(dispatcher);
-        
-        // 计算新增的命令数量
-        int afterCount = dispatcher.getRoot().getChildren().size();
-        int addedCommands = afterCount - beforeCount;
-        
-        // 重新同步命令树
-        if (addedCommands == 0) {
-            AuthShield.getLogger().warn("No AuthShield commands were registered!");
-        } else {
-            AuthShield.getLogger().info("Successfully registered " + addedCommands + " AuthShield commands");
-        }
+        AuthShield.getLogger().info("AuthShield commands registered successfully");
     }
     
     private void registerRegisterCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> register = Commands.literal("register")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
                 return 1;
@@ -60,7 +42,6 @@ public class CommandManager {
                     .executes(this::signUp)));
 
         LiteralArgumentBuilder<CommandSourceStack> registerAlias = Commands.literal("reg")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.register"), false);
                 return 1;
@@ -75,7 +56,6 @@ public class CommandManager {
     
     private void registerLoginCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> login = Commands.literal("login")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.login"), false);
                 return 1;
@@ -84,7 +64,6 @@ public class CommandManager {
                 .executes(this::signIn));
 
         LiteralArgumentBuilder<CommandSourceStack> loginAlias = Commands.literal("l")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.login"), false);
                 return 1;
@@ -98,7 +77,6 @@ public class CommandManager {
     
     private void registerChangePasswordCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> changePassword = Commands.literal("changepassword")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.changepassword"), false);
                 return 1;
@@ -108,7 +86,6 @@ public class CommandManager {
                     .executes(this::changePassword)));
 
         LiteralArgumentBuilder<CommandSourceStack> changePasswordAlias = Commands.literal("cp")
-            .requires(source -> source.getEntity() instanceof Player)
             .executes(context -> {
                 context.getSource().sendSuccess(() -> Config.getMessage("authshield.usage.cp"), false);
                 return 1;

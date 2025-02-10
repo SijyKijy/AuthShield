@@ -4,14 +4,14 @@ license="${mod_license}"
 issueTrackerURL="https://github.com/xmk2333/AuthShield/issues"
 
 [[mods]]
-modId="${mod_id}"
+modId="authshield"
 version="${mod_version}"
-displayName="${mod_name}"
+displayName="AuthShield"
 # updateJSONURL="https://change.me.example.invalid/updates.json"
 # displayURL="https://change.me.to.your.mods.homepage.example.invalid/"
 logoFile="assets/authshield/textures/icon.png"
 credits="感谢所有为本项目提供支持和反馈的用户！"
-authors="${mod_authors}"
+authors="xmk2333"
 description='''${mod_description}'''
 
 [[dependencies.authshield]]

@@ -1,3 +1,5 @@
+![authshield](https://github.com/user-attachments/assets/d0877220-d691-4625-b8b4-37bbdd3b510b)
+
 # AuthShield - 我的世界服务器登录验证插件
 
 ![Version](https://img.shields.io/badge/NeoForge-1.21.1-blue)

@@ -121,7 +121,28 @@ jobs:
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
           echo "file_key=$KEY" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release (tag = current)
+#      - name: Bump version for next release and push
+#        if: ${{ github.ref == 'refs/heads/main' }}
+#        run: |
+#          KEY='${{ steps.ver.outputs.file_key }}'
+#          NEXT='${{ steps.ver.outputs.next }}'
+#          FILE="gradle.properties"
+#          if [[ -f "$FILE" ]]; then
+#            if grep -qE "^$KEY=" "$FILE"; then
+#              sed -i -E "s/^$KEY=.*/$KEY=$NEXT/" "$FILE"
+#            else
+#              echo "$KEY=$NEXT" >> "$FILE"
+#            fi
+#          else
+#            echo "$KEY=$NEXT" > "$FILE"
+#          fi
+#          git config user.name "github-actions[bot]"
+#          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+#          git add "$FILE"
+#          git commit -m "chore: bump version to $NEXT [skip ci]"
+#          git push
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.current }}
@@ -130,24 +151,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bump version for next release and push
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          KEY='${{ steps.ver.outputs.file_key }}'
-          NEXT='${{ steps.ver.outputs.next }}'
-          FILE="gradle.properties"
-          if [[ -f "$FILE" ]]; then
-            if grep -qE "^$KEY=" "$FILE"; then
-              sed -i -E "s/^$KEY=.*/$KEY=$NEXT/" "$FILE"
-            else
-              echo "$KEY=$NEXT" >> "$FILE"
-            fi
-          else
-            echo "$KEY=$NEXT" > "$FILE"
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$FILE"
-          git commit -m "chore: bump version to $NEXT [skip ci]"
-          git push

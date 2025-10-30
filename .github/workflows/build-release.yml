@@ -1,170 +1,153 @@
-name: Build and Release
+name: Build & Release (NeoForge)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
     inputs:
-      release_type:
-        description: 'Release type (major, minor, patch)'
+      mc_versions:
+        description: 'Minecraft versions (Example: ["1.21.1"])'
         required: false
-        default: patch
-      release_notes:
-        description: 'Additional release notes'
-        required: false
-        default: ''
+        default: '["1.21.1"]'
 
 permissions:
   contents: write
-  actions: read
-  checks: read
 
 concurrency:
   group: build-release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  prepare:
-    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.versions.outputs.matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Load Minecraft versions
-        id: versions
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = `${process.env.GITHUB_WORKSPACE}/ci/minecraft-versions.json`;
-            const versions = JSON.parse(fs.readFileSync(path, 'utf8'));
-            if (!Array.isArray(versions) || versions.length === 0) {
-              core.setFailed('ci/minecraft-versions.json must contain a non-empty array of versions.');
-            }
-            core.setOutput('matrix', JSON.stringify({ minecraft: versions }));
-
   build:
-    needs: prepare
-    if: needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      matrix:
+        # Simple extension point: you can override the JSON array of versions when running manually
+        minecraft: ${{ fromJSON(github.event.inputs.mc_versions || '["1.21.1"]') }}
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build project
-        run: ./gradlew --build-cache clean build -Pminecraft_version=${{ matrix.minecraft }}
-
-      - name: Locate reobf jar
-        id: jar
-        run: |
-          jar_path=$(find build/libs -maxdepth 1 -type f -name '*-reobf.jar' | head -n 1)
-          if [[ -z "$jar_path" ]]; then
-            echo "No reobf jar produced" >&2
-            exit 1
-          fi
-          echo "path=$jar_path" >> "$GITHUB_OUTPUT"
-          echo "name=$(basename "$jar_path")" >> "$GITHUB_OUTPUT"
-
-      - name: Upload reobf jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: reobf-jar-${{ matrix.minecraft }}
-          path: ${{ steps.jar.outputs.path }}
-          if-no-files-found: error
-
-  release:
-    needs: build
-    if: needs.build.result == 'success'
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download build artifacts
+      - name: Set up Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21' # NeoForge recommended JDK 21
+
+      - name: Setup Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable (Linux)
+        run: chmod +x gradlew
+
+      - name: Build (NeoForge)
+        env:
+          MC_VERSION: ${{ matrix.minecraft }}
+        run: |
+          ./gradlew --build-cache clean build -Pminecraft_version=${MC_VERSION} --stacktrace
+
+      - name: Locate release jar
+        id: jar
+        shell: bash
+        run: |
+          shopt -s nullglob
+          release=""
+          for f in build/libs/*.jar; do
+            case "$f" in
+              *-sources.jar|*-javadoc.jar|*-dev*.jar|*-slim*.jar) continue;;
+              *) release="$f"; break;;
+            esac
+          done
+          if [[ -z "$release" ]]; then
+            echo "No release jar in build/libs"; ls -al build/libs || true; exit 1
+          fi
+          echo "path=$release" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$release")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-${{ matrix.minecraft }}
+          path: ${{ steps.jar.outputs.path }}
+
+  release:
+    if: ${{ github.event_name != 'pull_request' }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout for tagging/bump
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all built jars
         uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: jar-*
+          merge-multiple: true
 
-      - name: Collect artifact list
-        id: collect
+      - name: Read current & next version
+        id: ver
+        shell: bash
         run: |
-          shopt -s globstar nullglob
-          jars=()
-          for file in dist/**/*.jar; do
-            jars+=("$file")
-          done
-          if [ ${#jars[@]} -eq 0 ]; then
-            echo "No jars found in artifacts" >&2
-            exit 1
-          fi
-          {
-            echo "files<<EOF"
-            printf '%s\n' "${jars[@]}"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Prepare release version
-        id: version
-        env:
-          RELEASE_TYPE_INPUT: ${{ inputs.release_type }}
-        run: |
-          release_type="${RELEASE_TYPE_INPUT:-}"
-          if [ -z "$release_type" ]; then
-            release_type="patch"
-          fi
-          new_version=$(./ci/increment-version.sh "$release_type")
-          echo "version=$new_version" >> "$GITHUB_OUTPUT"
-
-      - name: Commit version bump
-        if: github.actor != 'github-actions[bot]'
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          if git diff --quiet -- gradle.properties; then
-            echo "No version changes to commit"
+          set -euo pipefail
+          CUR=""; FILE="gradle.properties"
+          if [[ -f "$FILE" ]]; then
+            if grep -qE '^mod_version=' "$FILE"; then
+              CUR=$(grep -E '^mod_version=' "$FILE" | head -n1 | cut -d= -f2)
+              KEY="mod_version"
+            elif grep -qE '^version=' "$FILE"; then
+              CUR=$(grep -E '^version=' "$FILE" | head -n1 | cut -d= -f2)
+              KEY="version"
+            else
+              KEY="version"; CUR=""
+            fi
           else
-            git add gradle.properties
-            git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
-            git push
+            KEY="version"
           fi
+          if [[ -z "${CUR}" ]]; then CUR="1.0.5"; fi
 
-      - name: Create tag
-        if: github.actor != 'github-actions[bot]'
-        run: |
-          tag="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists"
-          else
-            git tag "$tag"
-            git push origin "$tag"
-          fi
+          IFS=. read -r MAJ MIN PATCH <<<"$CUR"
+          PATCH=$((PATCH+1))
+          NEXT="${MAJ}.${MIN}.${PATCH}"
 
-      - name: Publish release
+          echo "current=$CUR" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "file_key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release (tag = current)
         uses: softprops/action-gh-release@v2
-        env:
-          RELEASE_NOTES_INPUT: ${{ inputs.release_notes }}
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          files: ${{ steps.collect.outputs.files }}
+          tag_name: v${{ steps.ver.outputs.current }}
+          name: v${{ steps.ver.outputs.current }}
+          files: dist/*.jar
           generate_release_notes: true
-          body: ${{ github.event_name == 'workflow_dispatch' && env.RELEASE_NOTES_INPUT || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version for next release and push
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          KEY='${{ steps.ver.outputs.file_key }}'
+          NEXT='${{ steps.ver.outputs.next }}'
+          FILE="gradle.properties"
+          if [[ -f "$FILE" ]]; then
+            if grep -qE "^$KEY=" "$FILE"; then
+              sed -i -E "s/^$KEY=.*/$KEY=$NEXT/" "$FILE"
+            else
+              echo "$KEY=$NEXT" >> "$FILE"
+            fi
+          else
+            echo "$KEY=$NEXT" > "$FILE"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "chore: bump version to $NEXT [skip ci]"
+          git push

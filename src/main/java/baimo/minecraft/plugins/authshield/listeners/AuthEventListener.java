@@ -83,9 +83,7 @@ public class AuthEventListener {
 
                 if (Config.isRegistrationOptional()) {
                     player.sendSystemMessage(Config.getMessage("authshield.register.optional"));
-                    if (!plugin.getPlayerManager().isLoggedIn(player)) {
-                        plugin.getPlayerManager().login(player);
-                    }
+                    plugin.getPlayerManager().login(player);
                 } else {
                     player.sendSystemMessage(Config.getMessage("authshield.register"));
                     plugin.getPlayerManager().applyRestrictions(player);

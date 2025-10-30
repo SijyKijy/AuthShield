@@ -72,6 +72,7 @@ public class Config {
     public static boolean subtitleEnabled;
     public static boolean actionbarEnabled;
     public static int actionbarInterval;
+    public static boolean registrationOptional;
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -122,6 +123,12 @@ public class Config {
                 LOGGER.info(getLogMessage("config.loaded"), configPath);
             }
             
+            JsonObject settings = config.has("settings")
+                ? config.getAsJsonObject("settings")
+                : new JsonObject();
+            registrationOptional = settings.has("optional_registration")
+                && settings.get("optional_registration").getAsBoolean();
+
             JsonObject login = config.getAsJsonObject("login");
             JsonObject timeout = login.getAsJsonObject("timeout");
             loginTimeoutEnabled = timeout.get("enabled").getAsBoolean();
@@ -385,5 +392,9 @@ public class Config {
 
     public static int getLoginTimeoutSeconds() {
         return loginTimeoutSeconds;
+    }
+
+    public static boolean isRegistrationOptional() {
+        return registrationOptional;
     }
 }

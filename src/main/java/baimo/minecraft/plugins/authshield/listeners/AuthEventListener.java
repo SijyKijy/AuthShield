@@ -54,11 +54,13 @@ public class AuthEventListener {
         if (event.getEntity() instanceof ServerPlayer player) {
             String uuid = player.getUUID().toString();
             
-            if (!plugin.getPasswordManager().hasPassword(uuid)) {
+            boolean hasPassword = plugin.getPasswordManager().hasPassword(uuid);
+
+            if (!hasPassword) {
                 if (Config.isFirstSpawnSet()) {
-                    ResourceKey<Level> targetDim = ResourceKey.create(Registries.DIMENSION, 
+                    ResourceKey<Level> targetDim = ResourceKey.create(Registries.DIMENSION,
                         ResourceLocation.tryParse(Config.getFirstSpawnWorld()));
-                    
+
                     if (player.serverLevel().dimension() != targetDim) {
                         ServerLevel targetLevel = player.server.getLevel(targetDim);
                         if (targetLevel != null) {
@@ -78,10 +80,17 @@ public class AuthEventListener {
                         );
                     }
                 }
-                
-                player.sendSystemMessage(Config.getMessage("authshield.register"));
-                plugin.getPlayerManager().applyRestrictions(player);
-                plugin.getPlayerManager().startLoginTimer(player);
+
+                if (Config.isRegistrationOptional()) {
+                    player.sendSystemMessage(Config.getMessage("authshield.register.optional"));
+                    if (!plugin.getPlayerManager().isLoggedIn(player)) {
+                        plugin.getPlayerManager().login(player);
+                    }
+                } else {
+                    player.sendSystemMessage(Config.getMessage("authshield.register"));
+                    plugin.getPlayerManager().applyRestrictions(player);
+                    plugin.getPlayerManager().startLoginTimer(player);
+                }
             } else if (!plugin.getPlayerManager().isLoggedIn(player)) {
                 player.sendSystemMessage(Config.getMessage("authshield.login"));
                 plugin.getPlayerManager().applyRestrictions(player);

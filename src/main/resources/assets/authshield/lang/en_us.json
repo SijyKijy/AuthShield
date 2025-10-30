@@ -5,6 +5,7 @@
   "authshield.subtitle.register": "§7Use §f/register §7<password> §7<confirmPassword> §7to register",
   "authshield.actionbar": "§7Please authenticate to continue playing",
   "authshield.register": "§7Use §f/register §7<password> §7<confirmPassword> §7to create an account",
+  "authshield.register.optional": "§7Registration is optional. Use §f/register §7<password> §7<confirmPassword> §7to secure your account",
   "authshield.login": "§7Use §f/login §7<password> §7to sign in",
   "authshield.login.success": "§aLogin successful! Enjoy your game!",
   "authshield.login.already": "§eYou're already logged in",

@@ -53,8 +53,9 @@ The plugin will automatically create configuration files on first run:
 #### 🌏 Basic Settings
 ```json
 "settings": {
-    "language": "zh_cn",     // Language: zh_cn(Chinese) or en_us(English)
-    "debug": false           // Enable debug mode
+    "language": "en_us",             // Language: en_us (English) or zh_cn (Chinese)
+    "debug": false,                  // Enable debug mode
+    "optional_registration": false   // Allow gameplay without registration when true
 }
 ```
 

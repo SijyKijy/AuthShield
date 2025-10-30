@@ -14,6 +14,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 
+import baimo.minecraft.plugins.authshield.AuthShield;
 import baimo.minecraft.plugins.authshield.Config;
 import baimo.minecraft.plugins.authshield.effects.EffectManager;
 
@@ -23,7 +24,12 @@ public class PlayerManager {
     private final ConcurrentMap<String, TimerTask> loginTasks = new ConcurrentHashMap<>();
     
     public boolean isLoggedIn(Player player) {
-        return loggedInPlayers.contains(getPlayerUUID(player));
+        String uuid = getPlayerUUID(player);
+        if (Config.isRegistrationOptional()
+            && !AuthShield.getInstance().getPasswordManager().hasPassword(uuid)) {
+            return true;
+        }
+        return loggedInPlayers.contains(uuid);
     }
     
     public void login(Player player) {

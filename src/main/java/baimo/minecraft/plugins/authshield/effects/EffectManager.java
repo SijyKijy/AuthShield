@@ -23,17 +23,23 @@ public class EffectManager {
             return;
         }
 
-        Component title;
-        Component subtitle;
-        
-        if (AuthShield.getInstance().getPasswordManager().hasPassword(uuid)) {
+        Component title = null;
+        Component subtitle = null;
+
+        boolean hasPassword = AuthShield.getInstance().getPasswordManager().hasPassword(uuid);
+
+        if (hasPassword) {
             title = Config.getMessage("authshield.title");
             subtitle = Config.getMessage("authshield.subtitle");
-        } else {
+        } else if (!Config.isRegistrationOptional()) {
             title = Config.getMessage("authshield.title.register");
             subtitle = Config.getMessage("authshield.subtitle.register");
         }
-        
+
+        if (title == null) {
+            return;
+        }
+
         showPersistentTitle(serverPlayer, title, subtitle);
     }
     

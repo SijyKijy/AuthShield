@@ -5,6 +5,7 @@
   "authshield.subtitle.register": "§7➤ 使用 §f/register §7<密码> §7<确认密码> §7注册",
   "authshield.actionbar": "§7❈ 请完成认证后继续游戏 ❈",
   "authshield.register": "§7➤ 使用 §f/register §7<密码> §7<确认密码> §7注册账号",
+  "authshield.register.optional": "§7➤ 注册为可选，可使用 §f/register §7<密码> §7<确认密码> §7保护账户安全",
   "authshield.login": "§7➤ 使用 §f/login §7<密码> §7登录账号",
   "authshield.login.success": "§a✔ 登录成功，祝您游戏愉快！",
   "authshield.login.already": "§e⚠ 您已经登录过了",

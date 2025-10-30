@@ -1,4 +1,9 @@
 {
+  "settings": {
+    "language": "en_us",
+    "debug": false,
+    "optional_registration": false
+  },
   "messages": {
     "title": {
       "enabled": true,

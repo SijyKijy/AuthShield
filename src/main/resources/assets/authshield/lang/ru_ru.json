@@ -5,6 +5,7 @@
   "authshield.subtitle.register": "§7Используйте §f/register §7<пароль> §7<подтверждение пароля> §7для регистрации",
   "authshield.actionbar": "§7Пожалуйста, авторизуйтесь, чтобы продолжить игру",
   "authshield.register": "§7Используйте §f/register §7<пароль> §7<подтверждение пароля> §7для создания аккаунта",
+  "authshield.register.optional": "§7Регистрация необязательна. Используйте §f/register §7<пароль> §7<подтверждение пароля>, чтобы защитить аккаунт",
   "authshield.login": "§7Используйте §f/login §7<пароль> §7для входа",
   "authshield.login.success": "§aУспешный вход! Приятной игры!",
   "authshield.login.already": "§eВы уже вошли в систему",

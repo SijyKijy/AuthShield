@@ -1,7 +1,8 @@
 {
   "settings": {
     "language": "en_us",
-    "debug": false
+    "debug": false,
+    "optional_registration": false
   },
   "login": {
     "timeout": {

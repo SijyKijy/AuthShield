@@ -211,6 +211,10 @@ public class CommandManager {
         String newPassword = StringArgumentType.getString(context, "newPassword");
         
         String storedHash = plugin.getPasswordManager().getPassword(uuid);
+        if (storedHash == null) {
+            player.sendSystemMessage(Config.getMessage("authshield.login.not_registered"));
+            return 0;
+        }
         if (!plugin.getPasswordManager().verifyPassword(oldPassword, storedHash)) {
             player.sendSystemMessage(Config.getMessage("authshield.changepassword.incorrect"));
             return 0;

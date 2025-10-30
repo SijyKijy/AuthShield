@@ -55,8 +55,9 @@ AuthShield 是一个专为 Minecraft NeoForge 服务器设计的登录验证插�
 #### 🌏 基础设置
 ```json
 "settings": {
-    "language": "zh_cn",     // 语言设置：zh_cn(中文)或en_us(英文)
-    "debug": false           // 是否启用调试模式
+    "language": "en_us",     // 语言设置：en_us(英文)或zh_cn(中文)
+    "debug": false,          // 是否启用调试模式
+    "optional_registration": false // 是否允许未注册玩家直接开始游戏
 }
 ```
 
